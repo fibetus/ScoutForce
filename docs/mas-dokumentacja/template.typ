@@ -12,7 +12,7 @@
   set page(
     paper: "a4",
     margin: (left: 25mm, right: 25mm, top: 25mm, bottom: 25mm),
-    numbering: "1",
+    numbering: none,
     number-align: center,
   )
 
@@ -29,6 +29,9 @@
   // Stylizacja nagłówków
   set heading(numbering: "1.1")
   show heading: it => {
+    if it.level == 1 {
+      pagebreak(weak: true)
+    }
     v(1em)
     it
     v(0.5em)
@@ -54,9 +57,13 @@
   ]
   pagebreak()
 
+  // Włączenie numeracji stron (od nowa)
+  set page(numbering: "1")
+  counter(page).update(1)
+
   // Spis treści
-  outline(title: "Spis Treści", depth: 3, indent: true)
-  pagebreak()
+  outline(title: "Spis Treści", depth: 3, indent: auto)
+  pagebreak(weak: true)
 
   // Ciało dokumentu
   body
