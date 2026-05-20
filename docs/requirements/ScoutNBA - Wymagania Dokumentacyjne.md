@@ -32,6 +32,11 @@ Dokumentacja musi obligatoryjnie składać się z następujących elementów:
    - W miarę możliwości powinien dotyczyć klasy, która odgrywa istotną rolę w analizowanym przypadku użycia.
 9. **Projekt interfejsu użytkownika (GUI)**
    - Oparty na opisywanym nietrywialnym przypadku użycia. Należy go sporządzić zgodnie z wytycznymi dotyczącymi *usability* podanymi na wykładzie.
+   - **Wymóg interakcji dwóch klas połączonych asocjacją (pkt 4.2.4 wymagań implementacyjnych — projektowany już na poziomie dokumentacji GUI):**
+     - Projekt GUI musi obejmować interakcję **co najmniej dwóch klas połączonych asocjacją z licznością docelową „wiele"** (np. `Klub` — `Zawodnik`, `Skaut` — `Raport Skautingowy`, `Raport Skautingowy` — `Ocena Szczegółowa`).
+     - Na makiecie musi być widoczny widget wyświetlający wiele elementów (np. `ListBox`) zawierający listę instancji pierwszej klasy. Po kliknięciu w wybraną pozycję wyświetla się drugi widget z listą obiektów drugiej klasy pobraną **za pomocą zdefiniowanej asocjacji** (nie przez kwerendę z filtrem na ekstensji).
+     - Niewystarczające jest GUI, które jedynie tworzy obiekty bez wzajemnej nawigacji między listami, oraz takie, które korzysta z liczności docelowej „1", pojedynczego TextBox-a lub odfiltrowywania danych z ekstensji.
+     - Wybór konkretnej pary klas dla GUI powinien być uzasadniony w punkcie *10. Omówienie decyzji projektowych*.
 10. **Omówienie decyzji projektowych i skutków analizy dynamicznej**
     - Jawne omówienie skutków analizy dynamicznej na architekturę. Należy udokumentować, jakie nowe asocjacje, atrybuty, czy metody (skutki) powstały i umieścić je następnie na implementacyjnym diagramie klas.
     - Opis decyzji projektowych z przykładami wskazującymi odpowiednie fragmenty diagramów (np. dlaczego zrealizowano daną ekstensję klasy w konkretny sposób).
