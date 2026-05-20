@@ -66,7 +66,7 @@ Dyrektor sportowy klubu NBA postanowił zamówić system "ScoutForce" wspomagaj�
 
 25. System powinien wspierać użytkowników w realizowaniu m.in. następujących funkcjonalności:
 
-25.1. *Utworzenie nowej delegacji* dla wybranego skauta z określonym zakresem dat (dyrektor klubu) - z możliwością wyboru skauta z listy aktualnie zatrudnionych w klubie.
+25.1. *Utworzenie nowej delegacji* dla wybranego skauta z określonym zakresem dat (dyrektor klubu) - z wyborem skauta z listy aktualnie zatrudnionych w klubie.
 
 25.2. *Wprowadzenie statystyk meczowych* zawodnika dla obserwowanego meczu (skaut).
 
@@ -77,10 +77,16 @@ Dyrektor sportowy klubu NBA postanowił zamówić system "ScoutForce" wspomagaj�
 
 25.4. *Wyświetlenie historii delegacji* danego skauta wraz z meczami obserwowanymi w trakcie każdej delegacji oraz raportami utworzonymi w ich ramach (skaut, dyrektor klubu).
 
-25.5. *Wyświetlenie listy wszystkich zawodników* wraz z aktualnymi statusami oraz średnimi ocenami, z możliwością filtrowania po pochodzeniu, klubie oraz statusie (skaut, dyrektor klubu).
+25.5. *Wyświetlenie listy wszystkich zawodników* wraz z aktualnymi statusami oraz średnimi ocenami (skaut, dyrektor klubu).
 
 25.6. *Wyświetlenie analizy strzeleckiej* zawodnika dla wybranego sezonu i strefy boiska (skaut, dyrektor klubu).
 
 25.7. *Wyświetlenie raportów skautingowych* dla wybranego zawodnika wraz ze szczegółowymi ocenami i komentarzami (skaut, dyrektor klubu).
 
 25.8. *Wyświetlenie listy zawodników o statusie "Zaproszony na Big Board"* posortowanej według średniej oceny - stanowiącej de facto ranking draftowy klubu (dyrektor klubu).
+
+25.9 *Zalogowanie się do systemu* w celu rozróżnienia osoby jaka używa systemu (Skaut, Dyrektor klubu).
+
+25.10 *Aktualizacja statusu zawodnika* w celu ułatwienia zarządzania BigBoard (Skaut).
+
+25.11 *Wyświetlenie listy skautów* (Dyrektor klubu).
