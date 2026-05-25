@@ -1,6 +1,8 @@
-= Scenariusz przypadku użycia
+= Scenariusze przypadków użycia
 
-== Informacje ogólne
+== Create Scouting Report
+
+=== Informacje ogólne
 
 #table(
   columns: (auto, 1fr),
@@ -42,13 +44,13 @@
   ],
 )
 
-== Powiązane przypadki użycia
+=== Powiązane przypadki użycia
 
 - `«include» View All Players` - wyświetlenie listy zawodników jako punkt wejścia do wyboru obiektu raportu.
 - `«include» Add Detailed Ratings` - obowiązkowa część procesu (raport musi mieć `1..*` ocen szczegółowych).
 - `«extend» View Player Matches` - opcjonalne rozszerzenie umożliwiające zawężenie raportu do podzbioru meczów wybranego ręcznie przez skauta.
 
-== Scenariusz główny
+=== Scenariusz główny
 
 Wariant domyślny - raport tworzony bezpośrednio z poziomu panelu zawodnika, *bez przeglądania listy meczów*. Zakres raportu obejmuje *wszystkie* mecze, w których wystąpił wybrany zawodnik i które jednocześnie obserwował skaut.
 
@@ -59,8 +61,7 @@ Wariant domyślny - raport tworzony bezpośrednio z poziomu panelu zawodnika, *b
   - _„Create Scouting Report"_ - utworzenie raportu obejmującego *wszystkie* mecze zawodnika obserwowane przez skauta (przepływ domyślny, kontynuuje krok 5);
   - _„View Player Matches"_ - opcjonalne przejście do listy meczów w celu zawężenia raportu do wybranych meczów (przepłw alternatywny A1).\
 + Skaut wybiera akcję _„Create Scouting Report"_.
-+ System ustala zakres meczów raportu jako pełny zbiór meczów spełniających dwa warunki: zawodnik wystąpił w meczu (istnieje obiekt `Match Stats` dla pary _(zawodnik, mecz)_) oraz skaut obserwował ten mecz. 
-_Jeżeli zbiór jest pusty - wyjątek E1._
++ System ustala zakres meczów raportu jako pełny zbiór meczów spełniających dwa warunki: zawodnik wystąpił w meczu (istnieje obiekt `Match Stats` dla pary _(Player, Match)_) oraz skaut obserwował ten mecz. _Jeżeli zbiór jest pusty - wyjątek E1._
 + System wyświetla formularz nowego raportu z polami: notatka tekstowa (`note`), rekomendacja draftowa (`recommendation`), dynamiczna sekcja ocen szczegółowych oraz panel statystyk meczów wchodzących w zakres raportu (uśrednione `minutes_played`, `points`, `rebounds`, `assists`, `steals`, `blocks` z odpowiednich `Match Stats`).
 + Skaut dodaje pierwszą ocenę szczegółową. *System wywołuje* `«include» Add Detailed Ratings` - przyjmuje od skauta: `type` (kategoria swobodna, np. _„offense"_, _„defense"_, _„athleticism"_, _„basketball IQ"_, _„character"_), `rating: [1, 10]`, `comment` oraz `weight: [0.0, 1.0]`. _Jeżeli wartość pola jest poza zakresem - wyjątek E4._
 + Skaut powtarza krok 8 dla kolejnych kategorii oceny (`1..*` ocen szczegółowych - co najmniej jedna wymagana).
@@ -72,9 +73,9 @@ _Jeżeli zbiór jest pusty - wyjątek E1._
 + System wyświetla potwierdzenie zapisu raportu wraz z wyliczonym `/finalRating`.
 + Przypadek użycia kończy się sukcesem.
 
-== Scenariusze alternatywne
+=== Scenariusze alternatywne
 
-=== A1. Skaut zawęża raport do wybranych meczów (`«extend» View Player Matches`)
+==== A1. Skaut zawęża raport do wybranych meczów (`«extend» View Player Matches`)
 
 _Punkt rozszerzenia:_ _Wybór zakresu meczów_ (krok 4 scenariusza głównego). Rozszerzenie jest *opcjonalne* - skaut może je pominąć i utworzyć raport bezpośrednio (krok 5 scenariusza głównego).
 
@@ -85,9 +86,9 @@ _Punkt rozszerzenia:_ _Wybór zakresu meczów_ (krok 4 scenariusza głównego). 
 + System ustala zakres meczów raportu jako zbiór dokładnie tych meczów, które skaut zaznaczył (zamiast pełnego zbioru obserwowanych meczów zawodnika).
 + Scenariusz wraca do kroku 7 scenariusza głównego.
 
-== Scenariusze wyjątków
+=== Scenariusze wyjątków
 
-=== E1. Wybrany zawodnik nie ma żadnego meczu obserwowanego przez skauta
+==== E1. Wybrany zawodnik nie ma żadnego meczu obserwowanego przez skauta
 
 _W kroku 6 scenariusza głównego lub w kroku A1.2 scenariusza alternatywnego_, jeżeli ustalony zbiór meczów wchodzących w zakres raportu jest pusty:
 
@@ -96,7 +97,7 @@ _W kroku 6 scenariusza głównego lub w kroku A1.2 scenariusza alternatywnego_, 
 + Skaut może wybrać innego zawodnika lub zakończyć pracę.
 + Przypadek użycia kończy się niepowodzeniem (warunki końcowe — porażka).
 
-=== E2. Skaut nie dodał żadnej oceny szczegółowej
+==== E2. Skaut nie dodał żadnej oceny szczegółowej
 
 _W kroku 13 scenariusza głównego_, jeżeli kolekcja `Detailed Rating` raportu jest pusta:
 
@@ -104,7 +105,7 @@ _W kroku 13 scenariusza głównego_, jeżeli kolekcja `Detailed Rating` raportu 
 + System pozostawia formularz w trybie edycji bez zapisu danych.
 + Scenariusz wraca do kroku 8 scenariusza głównego.
 
-=== E3. Suma wag ocen szczegółowych jest różna od 1.0
+==== E3. Suma wag ocen szczegółowych jest różna od 1.0
 
 _W kroku 13 scenariusza głównego_, podczas walidacji:
 
@@ -112,23 +113,23 @@ _W kroku 13 scenariusza głównego_, podczas walidacji:
 + System pozostawia formularz w trybie edycji.
 + Scenariusz wraca do kroku 8 scenariusza głównego (w celu korekty wag).
 
-=== E4. Wartość oceny lub wagi poza dopuszczalnym zakresem
+==== E4. Wartość oceny lub wagi poza dopuszczalnym zakresem, brak komentarza
 
 _W kroku 8 scenariusza głównego_, podczas wprowadzania pojedynczej oceny szczegółowej, jeżeli  niespełnione warunki: `rating: [1, 10]` lub `weight: [0.0, 1.0]`:
 
-+ System wyświetla komunikat walidacji pola: _„Ocena musi mieścić się w zakresie 1–10. Waga musi mieścić się w zakresie 0.0–1.0."_
++ System wyświetla komunikat walidacji pola: _„Ocena musi mieścić się w zakresie 1–10. Waga musi mieścić się w zakresie 0.0–1.0."_ lub _„Ocena musi mieć komentarz."_
 + System uniemożliwia dodanie nieprawidłowej oceny do raportu.
 + Skaut koryguje wartość - scenariusz pozostaje w kroku 8.
 
-=== E5. Brak wybranej rekomendacji draftowej
+==== E5. Brak wybranej rekomendacji draftowej, brak notki
 
 _W kroku 11 scenariusza głównego_, jeżeli pole `recommendation` nie zostało wypełnione (`recommendation = NULL`):
 
-+ System wyświetla komunikat walidacji: _„Rekomendacja draftowa jest wymagana. Wybierz jedną z opcji: strong_buy, buy, neutral, pass."_
++ System wyświetla komunikat walidacji: _„Rekomendacja draftowa jest wymagana. Wybierz jedną z opcji: strong_buy, buy, neutral, pass."_ lub _„Notka jest wymagana. Wypełnij notkę."_
 + System pozostawia formularz w trybie edycji.
 + Scenariusz wraca do kroku 11 scenariusza głównego.
 
-=== E6. Skaut anuluje operację
+==== E6. Skaut anuluje operację
 
 _W dowolnym kroku po kroku 5 scenariusza głównego_:
 
@@ -137,3 +138,88 @@ _W dowolnym kroku po kroku 5 scenariusza głównego_:
 + Jeżeli skaut potwierdza - system odrzuca wszystkie wprowadzone dane i wraca do panelu zawodnika (krok 4).
 + Jeżeli skaut wycofuje anulowanie - scenariusz wraca do ostatnio aktywnego kroku.
 + Przypadek użycia kończy się niepowodzeniem (warunki końcowe - porażka).
+
+
+#pagebreak()
+
+== Add Detailed Ratings
+
+=== Informacje ogólne
+
+#table(
+  columns: (auto, 1fr),
+  align: (left, left),
+  stroke: 0.5pt,
+
+  [*Nazwa*],
+  [`Add Detailed Rating`],
+
+  [*Aktor główny*],
+  [Scout],
+
+  [*Aktorzy drugorzędni*],
+  [brak],
+
+  [*Cel*],
+  [Wprowadzenie w formularzu tworzonego raportu skautingowego pojedynczej pozycji oceny szczegółowej w wybranej kategorii - wraz z komentarzem oraz wagą określającą udział tej oceny w `/finalRating` - tak aby została utrwalona w systemie razem z raportem przy zatwierdzeniu w scenariuszu `Create Scouting Report`.],
+
+  [*Wyzwalacz*],
+  [Skaut, w trakcie wypełniania formularza raportu skautingowego, decyduje się wprowadzić kolejną ocenę szczegółową w wybranej kategorii.],
+
+  [*Warunki początkowe*],
+  [
+    - Przypadek użycia `Create Scouting Report` jest aktywny - formularz nowego raportu jest otwarty w trybie edycji.
+    - Sekcja ocen szczegółowych formularza jest dostępna dla skauta.
+  ],
+
+  [*Warunki końcowe - sukces*],
+  [
+    - W formularzu tworzonego raportu pojawia się nowa pozycja `Detailed Rating` z polami: `type`, `rating: [1, 10]`, `comment` oraz `weight: [0.0, 1.0]`.
+    - Pozycja zostaje dołączona do lokalnej kolekcji ocen formularza (bufor w pamięci) - jeszcze bez utrwalania w systemie.
+    - Faktyczne utworzenie obiektu `Detailed Rating` w systemie nastąpi wyłącznie wraz z zatwierdzeniem nadrzędnego `Scouting Report` w scenariuszu `Create Scouting Report` (relacja kompozycji - `Detailed Rating` nie istnieje bez `Scouting Report`).
+  ],
+
+  [*Warunki końcowe - porażka*],
+  [
+    - Lokalny stan formularza nie zmienia się - żadna nowa pozycja `Detailed Rating` nie zostaje dołączona do sekcji ocen szczegółowych raportu.
+    - W systemie nie powstaje żaden obiekt `Detailed Rating`.
+  ],
+)
+
+=== Powiązane przypadki użycia
+
+- `«include» from Create Scouting Report` - przypadek użycia jest dołączany w trakcie tworzenia raportu skautingowego (jest jego obowiązkową częścią - raport musi zawierać `1..*` ocen szczegółowych). Scenariusz może zostać wykonany wielokrotnie w obrębie jednego wywołania `Create Scouting Report`.
+
+=== Scenariusz główny
+
+Skaut nie zatwierdza pojedynczej oceny - wprowadzone wartości pozostają w buforze formularza, a właściwy zapis ocen w systemie następuje dopiero przy zatwierdzeniu raportu (`Submit Report`) w scenariuszu `Create Scouting Report`. Walidacja zakresów odbywa się po stronie frontendu w trybie ciągłym (live), natomiast wiążąca walidacja systemowa wykonywana jest dopiero w momencie `Submit Report`.
+
++ Skaut wybiera w sekcji ocen szczegółowych formularza akcję _„+ Dodaj ocenę"_.
++ System dodaje do sekcji ocen nowy pusty wiersz oceny szczegółowej z polami: `type`, `rating`, `comment`, `weight` i uruchamia ich walidację wizualną w trybie ciągłym.
++ Skaut wprowadza wartość pola `type` (kategoria swobodna, np. _„offense"_, _„defense"_, _„athleticism"_, _„basketball IQ"_, _„character"_).
++ Skaut wprowadza wartość pola `rating` z zakresu `[1, 10]`. Frontend na bieżąco sygnalizuje wizualnie poprawność wartości - pole pozostaje w stanie błędu, jeżeli wartość wykracza poza zakres _(wskaźnik wyjątku E1)_.
++ Skaut wprowadza treść pola `comment` z uzasadnieniem oceny.
++ Skaut wprowadza wartość pola `weight` z zakresu `[0.0, 1.0]`. Frontend na bieżąco sygnalizuje wizualnie poprawność wartości - pole pozostaje w stanie błędu, jeżeli wartość wykracza poza zakres _(wskaźnik wyjątku E1)_.
++ Wprowadzona pozycja pozostaje w sekcji ocen szczegółowych formularza jako element bufora tworzonego raportu - bez utrwalania w systemie.
++ Skaut może powtórzyć kroki 1–7 dla kolejnych ocen szczegółowych w innych kategoriach (`1..*` pozycji w obrębie jednego raportu).
++ Przypadek użycia kończy się sukcesem - sterowanie wraca do scenariusza `Create Scouting Report`. Faktyczne utworzenie obiektów `Detailed Rating` nastąpi dopiero przy zatwierdzeniu raportu (`Submit Report`).
+
+=== Scenariusze wyjątków
+
+==== E1. Wartość oceny lub wagi poza dopuszczalnym zakresem (walidacja wizualna)
+
+_W kroku 4 lub 6 scenariusza głównego_, jeżeli wprowadzona wartość nie spełnia warunku `rating: [1, 10]` lub `weight: [0.0, 1.0]`:
+
++ Frontend wyświetla błąd w czerwonej ramce z błędami: _„Ocena musi mieścić się w zakresie 1–10. Waga musi mieścić się w zakresie 0.0-1.0."_
++ Skaut może kontynuować edycję pozostałych pól, jednak nieprawidłowa wartość nie zostaje wyczyszczona automatycznie.
++ Wiążąca walidacja systemowa wykonywana jest w scenariuszu `Create Scouting Report` przy `Submit Report` - jeżeli pozycja nadal zawiera nieprawidłową wartość, raport zostaje odrzucony zgodnie z wyjątkiem E4 scenariusza `Create Scouting Report`.
++ Scenariusz pozostaje odpowiednio w kroku 4 lub 6 do czasu poprawienia wartości lub usunięcia pozycji oceny _(wyjątek E2)_.
+
+==== E2. Skaut usuwa rozpoczętą ocenę
+
+_W dowolnym kroku po kroku 1 scenariusza głównego_:
+
++ Skaut wybiera w wierszu oceny akcję _„Usuń"_.
++ System usuwa wiersz oceny z sekcji ocen szczegółowych formularza wraz z wprowadzonymi wartościami pól.
++ Lokalny stan formularza nie zawiera tej pozycji - pozostałe wprowadzone wcześniej oceny pozostają nienaruszone.
++ Przypadek użycia kończy się niepowodzeniem (warunki końcowe - porażka) dla tej konkretnej pozycji, sterowanie wraca do scenariusza `Create Scouting Report`.
