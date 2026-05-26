@@ -1,4 +1,4 @@
-= Projekt interfejsu użytkownika (GUI)
+﻿= Projekt interfejsu użytkownika (GUI)
 
 == Ekran główny aplikacji po kliknięciu w zawodnika
 
@@ -38,14 +38,14 @@
   caption: [Dialog potwierdzenia anulowania (wyjątek E6). Komunikat: _„Czy na pewno chcesz anulować raport? Wprowadzone dane zostaną utracone."_ Skaut może potwierdzić anulowanie lub wrócić do edycji.],
 ) <fig:gui-cancel>
 
-== Potwierdzenie zapisu raportu — sukces
+== Potwierdzenie zapisu raportu - sukces
 
 #figure(
   image("../assets/ScoutForceGUI/CSR_success.png", width: 95%),
   caption: [Ekran potwierdzenia zapisu raportu (kroki 14-15 scenariusza głównego). System wyświetla wyliczony `/finalRating` oraz podsumowanie zapisanego raportu. Przypadek użycia kończy się sukcesem.],
 ) <fig:gui-success>
 
-== Wyjątek E1 — brak meczów obserwowanych przez skauta (widok Create Report)
+== Wyjątek E1 - brak meczów obserwowanych przez skauta (widok Create Report)
 
 #figure(
   image("../assets/ScoutForceGUI/E1_NoMatches.png", width: 95%),

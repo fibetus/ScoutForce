@@ -1,4 +1,4 @@
-= Wymagania niefunkcjonalne
+﻿= Wymagania niefunkcjonalne
 
 Wymagania niefunkcjonalne dla systemu ScoutForce sformułowano w sposób mierzalny i realistycznie weryfikowalny.
 
@@ -34,4 +34,4 @@ Wymagania niefunkcjonalne dla systemu ScoutForce sformułowano w sposób mierzal
 
 == Skalowalności i architektury
 
-11. *Niezależność warstw:* warstwa prezentacji komunikuje się z backendem wyłącznie przez zdefiniowane API REST — bez bezpośredniego dostępu do bazy.
+11. *Niezależność warstw:* warstwa prezentacji komunikuje się z backendem wyłącznie przez zdefiniowane API REST - bez bezpośredniego dostępu do bazy.
