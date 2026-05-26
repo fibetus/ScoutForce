@@ -118,6 +118,16 @@ Ograniczenie z wymagania 18 („suma wag wszystkich ocen szczegółowych w obrę
 
 Metoda zostanie wywołana w serwisie aplikacyjnym przed `scoutingReportRepository.save(...)` (scenariusz `Create Scouting Report`, krok 13).
 
+=== Ograniczenie `{subset}` - `validateMatchesObservedByScout()`
+
+Na diagramie klasowym występuje ograniczenie `{subset}` pomiędzy asocjacjami `Scout watches Match` oraz `Scouting Report is made based on Match`. Oznacza to, że raport nie może być oparty o mecz, którego autor raportu nie obserwował (zbiór meczów raportu jest podzbiorem zbioru meczów obserwowanych przez tego samego Scouta).
+
+Ograniczenie zostanie zaimplementowane jako metoda obiektowa klasy `Scouting Report`:
+
+- `+ validateMatchesObservedByScout(): void` - dla każdego meczu z `basedOnMatches` sprawdza, czy znajduje się on w `createdBy.watchedMatches`; w przeciwnym przypadku rzuca wyjątek walidacyjny.
+
+Metoda będzie wywoływana w serwisie aplikacyjnym przed zapisem raportu (w tym samym miejscu co `validateDetailedRatings()`), aby nigdy nie utrwalić w bazie powiązania `Scouting Report - Match` niepopartego wcześniej istniejącym powiązaniem `Scout - Match`.
+
 == Atrybuty pochodne - metody `get{AtrybutPochodny}()`
 
 Wszystkie atrybuty pochodne (oznaczone w diagramie prefiksem `/`) zostaną zaimplementowane jako *gettery wyliczające wartość on-the-fly* na podstawie powiązanych obiektów, bez utrwalania w bazie (`@Transient` w Hibernate):
@@ -130,6 +140,21 @@ Wszystkie atrybuty pochodne (oznaczone w diagramie prefiksem `/`) zostaną zaimp
 == Ograniczenia unikalności (`unique`)
 
 Atrybuty oznaczone jako unikatowe (`email` w `Person`, `license_number` w `Scout`) zostaną zmapowane adnotacją `@Column(unique = true, nullable = false)` w Hibernate. Ograniczenie jest egzekwowane na poziomie bazy (constraint `UNIQUE`) - próba zapisu duplikatu kończy się wyjątkiem `DataIntegrityViolationException` przechwytywanym w warstwie serwisowej i tłumaczonym na czytelny komunikat dla użytkownika (NFR 6).
+
+== Ograniczenie istnienia obu drużyn przy tworzeniu meczu
+
+Wymaganie 12 narzuca, że każdy mecz ma dokładnie dwie drużyny i pełnią one różne role: `host` oraz `guest`. Ograniczenie to zostanie wymuszone już na etapie tworzenia obiektu `Match`.
+
+- W konstruktorze klasy `Match` zostanie wywołana metoda:
+  - `+ validateBothTeams(): void`
+- Metoda sprawdzi, że:
+  - `host != null`,
+  - `guest != null`,
+  - `host.id != guest.id` (lub referencyjnie `host != guest`),
+  - role są kompletne (mecz zawsze ma oba końce relacji: gospodarza i gościa).
+- Jeżeli warunek nie zostanie spełniony, konstruktor przerwie tworzenie obiektu przez rzucenie wyjątku domenowego (np. `IllegalArgumentException` / własny `DomainValidationException`).
+
+W praktyce oznacza to, że nie da się utworzyć ani zapisać meczu bez przypisanego gospodarza i gościa oraz nie da się utworzyć meczu, w którym obie role wskazują ten sam klub.
 
 == Implementacja atrybutów klasowych, dostępu do danych i metod obiektowych
 
