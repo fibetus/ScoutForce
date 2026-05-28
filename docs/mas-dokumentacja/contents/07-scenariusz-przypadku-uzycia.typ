@@ -1,4 +1,4 @@
-﻿= Scenariusze przypadków użycia
+= Scenariusze przypadków użycia
 
 == Create Scouting Report
 
@@ -46,20 +46,20 @@
 
 === Powiązane przypadki użycia
 
-- `<<include>> View All Players` - wyświetlenie listy zawodników jako punkt wejścia do wyboru obiektu raportu.
+- `<<include>> View Players List` - wyświetlenie listy zawodników jako punkt wejścia do wyboru obiektu raportu.
 - `<<include>> Add Detailed Ratings` - obowiązkowa część procesu (raport musi mieć `1..*` ocen szczegółowych).
-- `<<extend>> View Player Matches` - opcjonalne rozszerzenie umożliwiające zawężenie raportu do podzbioru meczów wybranego ręcznie przez Scouta.
+- `<<extend>> View Player's Matches` - opcjonalne rozszerzenie umożliwiające zawężenie raportu do podzbioru meczów wybranego ręcznie przez Scouta.
 
 === Scenariusz główny
 
 Wariant domyślny - raport tworzony bezpośrednio z poziomu panelu zawodnika, *bez przeglądania listy meczów*. Zakres raportu obejmuje *wszystkie* mecze, w których wystąpił wybrany zawodnik i które jednocześnie obserwował Scout.
 
-+ Scout wybiera z menu opcję przeglądania zawodników. *System wywołuje* `<<include>> View All Players`.
++ Scout wybiera z menu opcję przeglądania zawodników. *System wywołuje* `<<include>> View Players List`.
 + System wyświetla listę zawodników. Dla każdej pozycji prezentowane są: pola identyfikujące (`first_name`, `last_name`, `position`, `club`, `player_status`) oraz atrybut pochodny: `/averageRating`.
 + Scout wybiera zawodnika z listy.
 + System wyświetla panel wybranego zawodnika z dwiema akcjami dostępnymi natychmiast:
   - _„Create Scouting Report"_ - utworzenie raportu obejmującego *wszystkie* mecze zawodnika obserwowane przez Scouta (przepływ domyślny, kontynuuje krok 5);
-  - _„View Player Matches"_ - opcjonalne przejście do listy meczów w celu zawężenia raportu do wybranych meczów (przepływ alternatywny A1).\
+  - _„View Player's Matches"_ - opcjonalne przejście do listy meczów w celu zawężenia raportu do wybranych meczów (przepływ alternatywny A1).\
 + Scout wybiera akcję _„Create Scouting Report"_.
 + System ustala zakres meczów raportu jako pełny zbiór meczów spełniających dwa warunki: zawodnik wystąpił w meczu (istnieje obiekt `Match Stats` dla pary _(Player, Match)_) oraz Scout obserwował ten mecz. _Jeżeli zbiór jest pusty - wyjątek E1._
 + System wyświetla formularz nowego raportu z polami: notatka tekstowa (`note`), rekomendacja draftowa (`recommendation`), dynamiczna sekcja ocen szczegółowych oraz panel statystyk meczów wchodzących w zakres raportu (uśrednione `minutes_played`, `points`, `rebounds`, `assists`, `steals`, `blocks` z odpowiednich `Match Stats`).
@@ -75,11 +75,11 @@ Wariant domyślny - raport tworzony bezpośrednio z poziomu panelu zawodnika, *b
 
 === Scenariusze alternatywne
 
-==== A1. Scout zawęża raport do wybranych meczów (`<<extend>> View Player Matches`)
+==== A1. Scout zawęża raport do wybranych meczów (`<<extend>> View Player's Matches`)
 
 _Punkt rozszerzenia:_ _Wybór zakresu meczów_ (krok 4 scenariusza głównego). Rozszerzenie jest *opcjonalne* - Scout może je pominąć i utworzyć raport bezpośrednio (krok 5 scenariusza głównego).
 
-+ Scout w kroku 4 wybiera akcję _„View Player Matches"_ zamiast _„Create Scouting Report"_. *System wywołuje* `<<extend>> View Player Matches`.
++ Scout w kroku 4 wybiera akcję _„View Player's Matches"_ zamiast _„Create Scouting Report"_. *System wywołuje* `<<extend>> View Player's Matches`.
 + System wyświetla listę meczów wybranego zawodnika *ograniczoną* do meczów obserwowanych przez Scouta. Dla każdego meczu prezentowane są: `date`, `place`, `host_score : guest_score`, nazwa klubu gospodarza i gościa oraz statystyki indywidualne zawodnika z `Match Stats` (`minutes_played`, `points`, `rebounds`, `assists`, `steals`, `blocks`). _Jeżeli lista jest pusta - wyjątek E1._
 + Scout zaznacza wybrane mecze (co najmniej jeden mecz wymagany).
 + Scout wybiera akcję _„Create Scouting Report from selected matches"_.
@@ -92,7 +92,7 @@ _Punkt rozszerzenia:_ _Wybór zakresu meczów_ (krok 4 scenariusza głównego). 
 
 _W kroku 6 scenariusza głównego lub w kroku A1.2 scenariusza alternatywnego_, jeżeli ustalony zbiór meczów wchodzących w zakres raportu jest pusty:
 
-+ System wyświetla komunikat: _„Wybrany zawodnik nie ma żadnego meczu, który obserwowałeś. Aby utworzyć raport, najpierw zaobserwuj co najmniej jeden mecz tego zawodnika."_
++ System wyświetla komunikat: _„Chosen player has no matches you've observed"_
 + System wraca do panelu zawodnika (krok 4 scenariusza głównego).
 + Scout może wybrać innego zawodnika lub zakończyć pracę.
 + Przypadek użycia kończy się niepowodzeniem (warunki końcowe - porażka).
@@ -101,7 +101,7 @@ _W kroku 6 scenariusza głównego lub w kroku A1.2 scenariusza alternatywnego_, 
 
 _W kroku 13 scenariusza głównego_, jeżeli kolekcja `Detailed Rating` raportu jest pusta:
 
-+ System wyświetla komunikat walidacji: _„Raport musi zawierać co najmniej jedną ocenę szczegółową. Dodaj przynajmniej jedną ocenę przed zatwierdzeniem raportu."_
++ System wyświetla komunikat walidacji: _„Report needs at least one Detailed Rating"_
 + System pozostawia formularz w trybie edycji bez zapisu danych.
 + Scenariusz wraca do kroku 8 scenariusza głównego.
 
@@ -109,7 +109,7 @@ _W kroku 13 scenariusza głównego_, jeżeli kolekcja `Detailed Rating` raportu 
 
 _W kroku 13 scenariusza głównego_, podczas walidacji:
 
-+ System wyświetla komunikat: _„Suma wag ocen szczegółowych musi wynosić dokładnie 1.0. Aktualna suma: \<obecna wartość\>."_
++ System wyświetla komunikat: _„Sum of weights need to be exactly 1.0. Current sum: <x>."_
 + System pozostawia formularz w trybie edycji.
 + Scenariusz wraca do kroku 8 scenariusza głównego (w celu korekty wag).
 
@@ -117,7 +117,7 @@ _W kroku 13 scenariusza głównego_, podczas walidacji:
 
 _W kroku 8 scenariusza głównego_, podczas wprowadzania pojedynczej oceny szczegółowej, jeżeli niespełnione warunki: `rating: [1, 10]`, `weight: [0.0, 1.0]` lub brak `comment`:
 
-+ System wyświetla komunikat walidacji pola: _„Ocena musi mieścić się w zakresie 1-10. Waga musi mieścić się w zakresie 0.0-1.0."_ lub _„Ocena musi mieć komentarz."_
++ System wyświetla komunikat: _„Rating must be in 1-10 range. Weight must be in 0.0-1.0 range."_
 + System uniemożliwia dodanie nieprawidłowej oceny do raportu.
 + Scout koryguje wartość - scenariusz pozostaje w kroku 8.
 
@@ -125,7 +125,7 @@ _W kroku 8 scenariusza głównego_, podczas wprowadzania pojedynczej oceny szcze
 
 _W kroku 11 scenariusza głównego_, jeżeli pole `recommendation` nie zostało wypełnione (`recommendation = NULL`) lub pole `note` jest puste:
 
-+ System wyświetla komunikat walidacji: _„Rekomendacja draftowa jest wymagana. Wybierz jedną z opcji: STRONG_BUY, BUY, NEUTRAL, PASS."_ lub _„Notka jest wymagana. Wypełnij notkę."_
++ System wyświetla komunikat walidacji: _„Notes and recommendation cannot be empty."_
 + System pozostawia formularz w trybie edycji.
 + Scenariusz wraca do kroku 11 scenariusza głównego.
 
@@ -134,7 +134,7 @@ _W kroku 11 scenariusza głównego_, jeżeli pole `recommendation` nie zostało 
 _W dowolnym kroku po kroku 5 scenariusza głównego_:
 
 + Scout wybiera akcję _„Anuluj"_.
-+ System wyświetla potwierdzenie: _„Czy na pewno chcesz anulować raport? Wprowadzone dane zostaną utracone."_
++ System wyświetla potwierdzenie: _„Do you want to discard report?"_
 + Jeżeli Scout potwierdza - system odrzuca wszystkie wprowadzone dane i wraca do panelu zawodnika (krok 4).
 + Jeżeli Scout wycofuje anulowanie - scenariusz wraca do ostatnio aktywnego kroku.
 + Przypadek użycia kończy się niepowodzeniem (warunki końcowe - porażka).
@@ -210,7 +210,7 @@ Scout nie zatwierdza pojedynczej oceny - wprowadzone wartości pozostają w bufo
 
 _W kroku 4 lub 6 scenariusza głównego_, jeżeli wprowadzona wartość nie spełnia warunku `rating: [1, 10]` lub `weight: [0.0, 1.0]`:
 
-+ Frontend wyświetla błąd w czerwonej ramce z błędami: _„Ocena musi mieścić się w zakresie 1-10. Waga musi mieścić się w zakresie 0.0-1.0."_
++ Frontend wyświetla błąd w czerwonej ramce z błędami: _„Rating must be in 1-10 range. Weight must be in 0.0-1.0 range."_
 + Scout może kontynuować edycję pozostałych pól, jednak nieprawidłowa wartość nie zostaje wyczyszczona automatycznie.
 + Wiążąca walidacja systemowa wykonywana jest w scenariuszu `Create Scouting Report` przy `Submit Report` - jeżeli pozycja nadal zawiera nieprawidłową wartość, raport zostaje odrzucony zgodnie z wyjątkiem E4 scenariusza `Create Scouting Report`.
 + Scenariusz pozostaje odpowiednio w kroku 4 lub 6 do czasu poprawienia wartości lub usunięcia pozycji oceny _(wyjątek E2)_.

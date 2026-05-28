@@ -6,7 +6,7 @@ Wymagania niefunkcjonalne dla systemu ScoutForce sformułowano w sposób mierzal
 
 1. *Czas odpowiedzi dla operacji odczytu:* dla typowych zapytań (wyświetlenie listy zawodników, listy raportów skautingowych, listy delegacji) system zwraca odpowiedź w czasie *poniżej 2 sekund* przy zbiorze do 1000 rekordów w bazie danych.
 
-2. *Czas zapisu raportu skautingowego:* zapis nowego raportu skautingowego wraz z ocenami szczegółowymi i aktualizacją statusu zawodnika trwa *poniżej 1 sekundy*.
+2. *Czas zapisu raportu skautingowego:* zapis nowego raportu skautingowego wraz z ocenami szczegółowymi trwa *poniżej 1 sekundy*.
 
 3. *Obsługa równoległych użytkowników:* system poprawnie obsługuje co najmniej *10 jednoczesnych sesji użytkowników* bez utraty spójności danych.
 

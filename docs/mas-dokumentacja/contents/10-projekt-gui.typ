@@ -1,4 +1,4 @@
-﻿= Projekt interfejsu użytkownika (GUI)
+= Projekt interfejsu użytkownika (GUI)
 
 == Ekran główny aplikacji po kliknięciu w zawodnika
 
@@ -11,7 +11,7 @@
 
 #figure(
   image("../assets/ScoutForceGUI/CSR_landing1.png", width: 95%),
-  caption: [Ekran tworzenia raportu skautingowe zawodnika - widzimy statystyki zawodnika, sekcję z Detailed Ratings oraz Notes.],
+  caption: [Ekran tworzenia raportu skautingowego zawodnika - widzimy statystyki zawodnika, sekcję z Detailed Ratings oraz Notes.],
 ) <fig:gui-players-list>
 
 #figure(
@@ -35,7 +35,7 @@
 
 #figure(
   image("../assets/ScoutForceGUI/CSR_E6.png", width: 95%),
-  caption: [Dialog potwierdzenia anulowania (wyjątek E6). Komunikat: _„Czy na pewno chcesz anulować raport? Wprowadzone dane zostaną utracone."_ Skaut może potwierdzić anulowanie lub wrócić do edycji.],
+  caption: [Dialog potwierdzenia anulowania (wyjątek E6). Komunikat: _„Do you want to discard report?"_ Skaut może potwierdzić anulowanie lub wrócić do edycji.],
 ) <fig:gui-cancel>
 
 == Potwierdzenie zapisu raportu - sukces
@@ -49,12 +49,12 @@
 
 #figure(
   image("../assets/ScoutForceGUI/E1_NoMatches.png", width: 95%),
-  caption: [Stan pusty E1 - wybrany zawodnik nie ma żadnego meczu obserwowanego przez skauta. Komunikat: _„Wybrany zawodnik nie ma żadnego meczu, który obserwowałeś. Aby utworzyć raport, najpierw zaobserwuj co najmniej jeden mecz tego zawodnika."_ System wraca do panelu zawodnika.],
+  caption: [Stan pusty E1 - wybrany zawodnik nie ma żadnego meczu obserwowanego przez skauta. Komunikat: _„Chosen player has no matches you've observed"_ System wraca do panelu zawodnika.],
 ) <fig:gui-e1>
 
 == Widok meczów zawodnika - brak meczów (scenariusz alternatywny A1 + E1)
 
 #figure(
   image("../assets/ScoutForceGUI/ViewMatches_NoMatches.png", width: 95%),
-  caption: [Widok _„View Player Matches"_ (scenariusz alternatywny A1, krok A1.2) w sytuacji, gdy lista meczów jest pusta - wyjątek E1. Skaut nie może utworzyć raportu z wybranych meczów, ponieważ żaden mecz nie spełnia warunków początkowych.],
+  caption: [Widok _„View Player's Matches"_ (scenariusz alternatywny A1, krok A1.2) w sytuacji, gdy lista meczów jest pusta - wyjątek E1. Skaut nie może utworzyć raportu z wybranych meczów, ponieważ żaden mecz nie spełnia warunków początkowych.],
 ) <fig:gui-matches-empty>

@@ -1,4 +1,4 @@
-﻿= Wprowadzenie
+= Wprowadzenie
 
 == Dziedzina problemowa
 
@@ -30,7 +30,7 @@ W całej dokumentacji przyjęto rozdzielenie warstwy opisu biznesowego (język p
 
 === Przypadki użycia (Use Cases)
 
-- Nazwy w notacji *Title Case*, po angielsku, zgodne z diagramem przypadków użycia, np. `Create Scouting Report`, `View All Players`, `Add Detailed Ratings`, `View Player Matches`.
+- Nazwy w notacji *Title Case*, po angielsku, zgodne z diagramem przypadków użycia, np. `Create Scouting Report`, `View Players List`, `Add Detailed Ratings`, `View Player's Matches`.
 - W tekście scenariusza odwołania do przypadków użycia zapisywane są w backtickach, np. `Create Scouting Report`.
 - Relacje UML: `<<include>>`, `<<extend>>` - nazwa docelowa po angielsku.
 
