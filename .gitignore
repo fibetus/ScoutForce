@@ -1,34 +1,44 @@
-# Compiled class file
+# ─── IDE ──────────────────────────────────────────────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# ─── Java compiled / packaged ─────────────────────────────────────────────────
 *.class
-
-# Log file
-*.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
 *.ear
+
+# ─── Archives ─────────────────────────────────────────────────────────────────
 *.zip
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+*.log
 hs_err_pid*
 replay_pid*
 
-#IntelliJ IDEA files
-.idea
+# ─── H2 database files ───────────────────────────────────────────────────────
+*.mv.db
+*.trace.db
+data/
 
+# ─── Build output ─────────────────────────────────────────────────────────────
+target/
+build/
 
-#docs
-docs/context/
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
 
-# Prywatne pliki i research
+# ─── Frontend ─────────────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+
+# ─── Private / research ──────────────────────────────────────────────────────
 private/
+docs/context/
