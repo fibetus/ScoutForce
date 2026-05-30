@@ -72,16 +72,18 @@ Dyrektor sportowy klubu NBA postanowił zamówić system "ScoutForce" wspomagaj�
 
 25.3. *Stworzenie raportu skautingowego* dla zawodnika (skaut) wyświetlonego z listy, wraz z:
    - dołączeniem od jednej do wielu ocen szczegółowych (z walidacją sumy wag = 1.0),
-   - automatycznym wyliczeniem oceny końcowej,
+   - automatycznym wyliczeniem oceny końcowej.
 
-25.4. *Wyświetlenie historii delegacji* danego skauta wraz z meczami obserwowanymi w trakcie każdej delegacji oraz raportami utworzonymi w ich ramach (skaut, dyrektor klubu).
+25.4. *Wyświetlenie meczów zawodnika* (skaut, dyrektor klubu) po wyborze zawodnika z listy system prezentuje mecze, w których zawodnik wystąpił.
 
-25.5. *Wyświetlenie listy wszystkich zawodników* wraz z aktualnymi statusami oraz średnimi ocenami (skaut, dyrektor klubu).
+25.5. *Wyświetlenie historii delegacji* danego skauta wraz z meczami obserwowanymi w trakcie każdej delegacji oraz raportami utworzonymi w ich ramach (skaut, dyrektor klubu).
 
-25.6. *Wyświetlenie analizy strzeleckiej* zawodnika dla wybranego sezonu i strefy boiska (skaut, dyrektor klubu).
+25.6. *Wyświetlenie listy wszystkich zawodników* wraz z aktualnymi statusami oraz średnimi ocenami (skaut, dyrektor klubu).
 
-25.7. *Wyświetlenie raportów skautingowych* dla wybranego zawodnika wraz ze szczegółowymi ocenami i komentarzami (skaut, dyrektor klubu).
+25.7. *Wyświetlenie analizy strzeleckiej* zawodnika dla wybranego sezonu i strefy boiska (skaut, dyrektor klubu).
 
-25.8. *Wyświetlenie listy zawodników o statusie "Zaproszony na Big Board"* posortowanej według średniej oceny - stanowiącej de facto ranking draftowy klubu (dyrektor klubu).
+25.8. *Wyświetlenie raportów skautingowych* dla wybranego zawodnika wraz ze szczegółowymi ocenami i komentarzami (skaut, dyrektor klubu).
 
-25.9 *Aktualizacja statusu zawodnika* w celu ułatwienia zarządzania Big Board (skaut).
+25.9. *Wyświetlenie listy zawodników o statusie "Zaproszony na Big Board"* posortowanej według średniej oceny - stanowiącej de facto ranking draftowy klubu (dyrektor klubu).
+
+25.10. *Aktualizacja statusu zawodnika* w celu ułatwienia zarządzania Big Board (skaut).
