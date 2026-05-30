@@ -1,178 +1,196 @@
 = Omówienie decyzji projektowych i skutków analizy dynamicznej
 
+Niniejszy rozdział opisuje *planowane* decyzje implementacyjne wynikające z analizy dynamicznej - formułowany jest w czasie przyszłym jako dokumentacja projektowa poprzedzająca (lub równoległa względem) fazę kodowania systemu.
+
 == Wykorzystane technologie
 
-- *Backend:* Spring (Spring Boot + Spring Data JPA) z Hibernate jako dostawcą ORM.
+- *Backend:* Spring (Spring Boot + Spring Data JPA) z Hibernate jako ORM.
 - *Frontend:* React (SPA komunikujące się z backendem przez REST).
-- *Baza danych:* H2 (wbudowana, prosta w konfiguracji do celów dydaktycznych; docelowo wymienna na dowolną relacyjną bazę zgodną z JDBC).
+- *Baza danych:* H2.
 - *Modelowanie UML:* Lucidchart (diagramy przypadków użycia, klas, stanu, aktywności).
 - *Projekt interfejsu (mockupy GUI):* Figma.
 
-== Klasa `Player` - dziedziczenie dynamiczne i ograniczenia atrybutów
+== Ograniczenia atrybutów - enumy
 
-#figure(
-  image("../assets/ScoutForce_adr_player.svg", width: 90%),
-  caption: [Fragment projektowego diagramu klas - klasa `Player` wraz z interfejsem `PlayerExperience` oraz jego implementacjami],
-) <fig:adr-player>
+W wyniku analizy dynamicznej wszystkie atrybuty o ograniczonej dziedzinie wartości zostaną zamienione na *enumy Javy*. Zgodnie z konwencją nazewnictwa (rozdz. 1) stałe enumów będą zapisywane w UPPERCASE.
 
-=== Dynamiczne dziedziczenie zawodnika (`<<dynamic>>`)
+*`PlayerStatus`* (atrybut `player_status` klasy `Player`): `NEW`, `OBSERVED`, `MEDICAL_VERIFICATION`, `INVITED_TO_WORKOUT`, `INVITED_TO_BIG_BOARD`, `DELISTED`.
 
-Z analizy wymagania nr 9 (rozdz. 2.3) wynika, że podział zawodników na *uniwersyteckich* (`UniversityExperience`) i *profesjonalnych* (`ProfessionalExperience`) jest *kompletny, rozłączny, ale dynamiczny* - zawodnik kończąc college przestaje być zawodnikiem uniwersyteckim i staje się profesjonalnym (lub odwrotnie, przy powrocie do NCAA). Klasyczne dziedziczenie statyczne w Javie tego nie obsłuży - obiekt nie zmienia swojej klasy w trakcie życia.
+*`PositionType`* (skrót i numer pozycji 1-5): `POINT_GUARD("PG", 1)` … `CENTER("C", 5)`.
 
-W projektowym diagramie klas zastosowano wzorzec State / Strategy:
+*`ClassType`* (`UniversityExperience`): `FRESHMAN`, `SOPHOMORE`, `JUNIOR`, `SENIOR`.
 
-- Utworzono interfejs `PlayerExperience`, który jest *kompozycją* klasy `Player` - referencja do obiektu implementującego interfejs jest przekazywana w konstruktorze klasy `Player`, a klasa `Player` zarządza jej cyklem życia.
-- Powstały dwie konkretne klasy implementujące interfejs: `UniversityExperience` (atrybuty: `university`, `class`) oraz `ProfessionalExperience` (atrybut: `countryOfOrigin`).
-- Przepinanie aktualnej implementacji odbywa się przez metody klasy `Player`:
-  - `+ becomeUniversityPlayer(university: String, classType: ClassType): void`
-  - `+ becomeProfessionalPlayer(countryOfOrigin: String): void`
+*`RecommendationType`* (`Scouting Report`): `STRONG_BUY`, `BUY`, `NEUTRAL`, `PASS`.
 
-Dzięki temu jeden obiekt `Player` zachowuje swoją tożsamość (i powiązania z `Scouting Report`, `Match Stats` itd.), a zmienia jedynie strategię opisującą jego doświadczenie zawodnicze.
+*`DelegationStatus`* (`Delegation`): `PLANNED`, `APPROVED`, `IN_PROGRESS`, `FINISHED`, `CANCELLED`.
 
-== Ograniczenia atrybutów typu wyliczeniowego - enumy
+W mapowaniu Hibernate wszystkie powyższe enumy będą oznaczane `@Enumerated(EnumType.STRING)` - w H2 zapisana zostanie nazwa stałej (np. `"INVITED_TO_BIG_BOARD"`), a nie indeks porządkowy.
 
-W wyniku analizy dynamicznej wszystkie atrybuty o ograniczonej dziedzinie wartości zostały zamienione na *enumy Javy*. Zgodnie z konwencją nazewnictwa (rozdz. 1) stałe enumów są zapisywane w UPPERCASE.
+== Mapowanie asocjacji i agregacji
 
-*`PlayerStatus`* - status zawodnika w procesie skautingowym (atrybut `player_status` klasy `Player`):
-- `NEW`
-- `OBSERVED`
-- `MEDICAL_VERIFICATION`
-- `INVITED_TO_WORKOUT`
-- `INVITED_TO_BIG_BOARD`
-- `DELISTED`
+Wszystkie asocjacje z diagramu projektowego będą realizowane adnotacjami JPA/Hibernate:
 
-*`PositionType`* - pozycja zawodnika na boisku. Atrybut `position` (wymaganie 8) został w analizie dynamicznej dodatkowo ograniczony do skończonego zbioru wartości; każda pozycja ma przypisane wartości pomocnicze (skrót oraz numer pozycji 1-5), aby ułatwić skautom poruszanie się po systemie:
-- `POINT_GUARD("PG", 1)`
-- `SHOOTING_GUARD("SG", 2)`
-- `SMALL_FORWARD("SF", 3)`
-- `POWER_FORWARD("PF", 4)`
-- `CENTER("C", 5)`
+- *1 - \** $arrow$ `@OneToMany` (właściciel kolekcji) oraz `@ManyToOne` (element), np. `Scout` $arrow$ `Scouting Report`, `Delegation` $arrow$ `Match`.
+- *\* - \** $arrow$ `@ManyToMany`, np. `Scout` $arrow$ `Match` (mecze obserwowane).
+- *Agregacja* - ten sam mechanizm co asocjacja; różnica pozostanie semantyką modelu UML, nie osobną adnotacją Hibernate.
 
-*`ClassType`* - rocznik zawodnika uniwersyteckiego. Atrybut `class` klasy `UniversityExperience` (wymaganie 10) został zamieniony na enum:
-- `FRESHMAN`
-- `SOPHOMORE`
-- `JUNIOR`
-- `SENIOR`
+*Nawigacja* - w encjach pojawią się pola `List` / referencje z adnotacjami JPA (np. `detailedRatings` w `ScoutingReport`, `matchStats` w `Player`). Logika przypadków użycia będzie w miarę możliwości korzystać z nawigacji po tych polach zamiast z rozproszonych zapytań SQL.
 
-*`RecommendationType`* - rekomendacja draftowa raportu skautingowego. Atrybut `recommendation` klasy `Scouting Report` (wymaganie 16):
-- `STRONG_BUY`
-- `BUY`
-- `NEUTRAL`
-- `PASS`
+*Ekstensja klas* - na diagramie projektowym może być oznaczona metodami klasowymi; w implementacji ze Spring + Hibernate *nie będzie* utrzymywana jako `static Set<T>` w encjach. Stan trafi do bazy H2, a dostęp do zbiorów instancji zapewnią repozytoria oraz ładowane asocjacje (patrz sekcja o warstwie Spring).
 
-*`DelegationStatus`* - status delegacji. Atrybut `status` klasy `Delegation` (wymaganie 20):
-- `PLANNED`
-- `APPROVED`
-- `IN_PROGRESS`
-- `FINISHED`
-- `CANCELLED`
+== Implementacja kompozycji
 
-=== Sposób przechowywania enumów w bazie
+Kompozycje z diagramu projektowego zostaną zmapowane wspólnym wzorcem: właściciel cyklu życia, `cascade = CascadeType.ALL`, `orphanRemoval = true` tam, gdzie element nie będzie miał sensu bez rodzica.
 
-W mapowaniu Hibernate wszystkie powyższe enumy są oznaczane adnotacją `@Enumerated(EnumType.STRING)` - w bazie H2 są przechowywane jako napis odpowiadający nazwie stałej (np. `"INVITED_TO_BIG_BOARD"`), a nie jako liczba porządkowa. Dzięki temu dodanie nowej wartości w przyszłości nie powoduje przesunięcia indeksów i nie psuje danych historycznych.
+=== `Scouting Report` i `Detailed Rating`
 
-== Mapowanie asocjacji i agregacji w Hibernate
+Na diagramie UML: kompozycja `Scouting Report` ◆─ `Detailed Rating`. W Javie: `ScoutingReport` będzie posiadać `List<DetailedRating> detailedRatings`, a każda ocena - obowiązkowe `@ManyToOne` do raportu. Po stronie raportu zastosowane zostanie `@OneToMany(mappedBy = "scoutingReport", cascade = CascadeType.ALL, orphanRemoval = true)`. Przy zapisie raportu serwis ustawi `detailedRating.setScoutingReport(report)` na każdej pozycji (właściciel relacji w ORM). Usunięcie raportu usunie wszystkie jego oceny szczegółowe.
 
-Wszystkie asocjacje z diagramu klas są realizowane za pomocą adnotacji JPA/Hibernate odpowiadających ich licznościom:
+=== `Player` i doświadczenie zawodnicze (`PlayerExperience`)
 
-- *1 - \** $arrow$ `@OneToMany` po stronie właściciela kolekcji oraz `@ManyToOne` po stronie elementów (np. `Delegation` $arrow$ `Match`, `Scout` $arrow$ `Scouting Report`).
-- *\* - \** $arrow$ `@ManyToMany` (np. powiązanie meczów obserwowanych przez wielu skautów w ramach różnych delegacji).
-- *Agregacja* jest implementowana w taki sam sposób jak zwykła asocjacja - z punktu widzenia Hibernate nie ma osobnej adnotacji dla agregacji; różnica między asocjacją a agregacją pozostaje informacją semantyczną na poziomie modelowania.
+Na diagramie: kompozycja `Player` z `UniversityExperience` lub `ProfessionalExperience` (co najwyżej jedna aktywna implementacja). W Javie zamiast jednego pola interfejsu powstaną dwa `@OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)` na encji `Player` - w danym momencie tylko jedno będzie niepuste. Przełączanie typu doświadczenia zapewnią metody `becomeUniversityPlayer` i `becomeProfessionalPlayer`.
 
-=== Ekstensja klas a persystencja (decyzja implementacyjna)
+=== `Player` i `ShootingAnalysis`
 
-Na diagramie projektowym ekstensja klasy może być oznaczona metodami klasowymi. W implementacji ze Spring + Hibernate *nie będzie* utrzymywana jako `private static Set<T>` w encjach - stan trafi do bazy H2, a dostęp do zbiorów instancji oraz powiązań między obiektami będzie realizowany przez repozytoria i asocjacje JPA (patrz sekcja na końcu rozdziału).
+Kompozycja `Player` ◆─ `ShootingAnalysis`: `@OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)` na liście analiz strzeleckich zawodnika. Usunięcie zawodnika usunie powiązane wpisy analizy.
+
+=== Uwaga: `Match Stats` i agregacje
+
+*`Match Stats`* nie jest kompozycją w sensie raportu - to *klasa asocjacyjna* `Player`-`Match` (osobna encja, patrz kolejna sekcja). *Agregacje* (np. `Delegation` $arrow$ `Match`) będą mapowane jak zwykłe `@OneToMany` / `@ManyToOne` - Hibernate nie rozróżni ich od zwykłej asocjacji; różnica pozostanie na diagramie UML.
 
 #pagebreak()
 
-== Klasa `Scouting Report` - kompozycja, klasa pośrednicząca i atrybuty pochodne
+== Klasa pośrednicząca `Match Stats`
 
 #figure(
   image("../assets/ScoutForce_adr_stats.svg", width: 90%),
-  caption: [Fragment projektowego diagramu klas - klasa `Scouting Report` wraz z `Detailed Rating` (kompozycja) oraz klasą pośredniczącą `Match Stats`],
+  caption: [Fragment projektowego diagramu klas - klasa pośrednicząca `Match Stats` oraz powiązany `Scouting Report` z kompozycją `Detailed Rating`],
 ) <fig:adr-stats>
 
-=== Klasa pośrednicząca `Match Stats`
-
-W modelu analitycznym `Match Stats` reprezentowało asocjację wiele-do-wielu między `Player` a `Match` z dodatkowymi atrybutami (`minutes_played`, `points`, `rebounds`, `assists`, `steals`, `blocks`, `turnovers`, `fouls`, statystyki rzutowe). W projekcie taka konstrukcja nie istnieje wprost w Javie - została więc zastąpiona *klasą pośredniczącą* powiązaną z `Player` i `Match` dwiema asocjacjami *jeden-do-wielu*:
+W modelu analitycznym `Match Stats` reprezentowało asocjację wiele-do-wielu między `Player` a `Match` z atrybutami na łuku (`minutes_played`, `points`, `rebounds`, `assists`, `steals`, `blocks`, `turnovers`, `fouls`, statystyki rzutowe). W Javie zostanie to zastąpione *klasą pośredniczącą*:
 
 - `Player` `1` - `*` `Match Stats`,
 - `Match` `1` - `*` `Match Stats`.
 
-Każda instancja `Match Stats` reprezentuje pojedynczy występ konkretnego zawodnika w konkretnym meczu i nosi wszystkie atrybuty wcześniej leżące „na asocjacji".
+Każda instancja będzie opisywać jeden występ zawodnika w jednym meczu. Para `(player_id, match_id)` będzie unikatowa (`@UniqueConstraint`). Atrybuty pochodne procentów skuteczności (`/fieldGoalPercentage`, `/threePointPercentage`, `/freeThrowPercentage`) zostaną zaimplementowane jako gettery `@Transient` na podstawie pól rzutów.
 
-== Kompozycja `Scouting Report` - `Detailed Rating`
+== Zawodnik (`Player`) - doświadczenie dynamiczne
 
-Zgodnie z wymaganiem 17, ocena szczegółowa (`Detailed Rating`) nie istnieje bez raportu, który ją zawiera - usunięcie raportu skutkuje automatycznym usunięciem wszystkich ocen szczegółowych. Kompozycja zostanie zrealizowana w Hibernate przez:
+=== Dynamiczne dziedziczenie (`<<dynamic>>`)
 
-- `@OneToMany(mappedBy = "scoutingReport", cascade = CascadeType.ALL, orphanRemoval = true)` po stronie `Scouting Report`,
-- `@ManyToOne(optional = false)` po stronie `Detailed Rating`.
+#figure(
+  image("../assets/ScoutForce_adr_player.svg", width: 90%),
+  caption: [Fragment projektowego diagramu klas - `Player`, interfejs `PlayerExperience` oraz implementacje],
+) <fig:adr-player>
 
-Kolekcja ocen szczegółowych w encji `ScoutingReport` (`List<DetailedRating>`) będzie persystowana przez Hibernate; dodawanie i usuwanie elementów odbywa się na tej kolekcji przed zapisem encji nadrzędnej.
+Z wymagania nr 9 (rozdz. 2.3) wynika podział zawodników na *uniwersyteckich* i *profesjonalnych* - kompletny, rozłączny, lecz *dynamiczny* (zawodnik może zmienić typ bez utraty tożsamości obiektu). Statyczne podklasy `Player` w Javie tego nie obsłużą.
 
-=== Walidacja sumy wag - `validateDetailedRatings()`
+Zostanie zastosowany wzorzec Strategy / State:
 
-Ograniczenie z wymagania 18 („suma wag wszystkich ocen szczegółowych w obrębie jednego raportu = dokładnie `1.0`") nie da się wyrazić wprost w UML jako liczność ani w Hibernate jako ograniczenie kolumny. Zostanie zrealizowane jako *metoda obiektowa* klasy `Scouting Report`:
+- interfejs `PlayerExperience` jako kompozycja `Player` (szczegóły mapowania - sekcja kompozycji powyżej),
+- implementacje `UniversityExperience` (`university`, `classType`) oraz `ProfessionalExperience` (`countryOfOrigin`),
+- przepinanie przez `+becomeUniversityPlayer(...)`, `+becomeProfessionalPlayer(...)`.
 
-- `+ validateDetailedRatings(): void` - przegląda kolekcję `Detailed Rating`, sumuje wagi (`BigDecimal`) i rzuca wyjątek walidacyjny, jeżeli suma jest różna od `1.0`.
+Jeden obiekt `Player` zachowa powiązania z `Scouting Report`, `Match Stats` itd., zmieniając wyłącznie strategię opisu doświadczenia.
 
-Metoda zostanie wywołana w serwisie aplikacyjnym przed `scoutingReportRepository.save(...)` (scenariusz `Create Scouting Report`, krok 13).
+=== Status zawodnika - uproszczenie względem diagramu stanu
 
-=== Ograniczenie `{subset}` - `validateMatchesObservedByScout()`
+Diagram stanu (rozdz. 9) definiuje dozwolone przejścia `player_status`. Pełna implementacja wymagałaby osobnych operacji z `{guard}` dla każdego przejścia.
 
-Na diagramie klasowym występuje ograniczenie `{subset}` pomiędzy asocjacjami `Scout watches Match` oraz `Scouting Report is made based on Match`. Oznacza to, że raport nie może być oparty o mecz, którego autor raportu nie obserwował (zbiór meczów raportu jest podzbiorem zbioru meczów obserwowanych przez tego samego Scouta).
+Wyróżniony przypadek użycia *Create Scouting Report* nie wymaga w scenariuszu głównym zarządzania maszyną stanów (status będzie tylko wyświetlany), dlatego zamiast wielu metod z diagramu stanu powstanie jedna operacja:
 
-Ograniczenie zostanie zaimplementowane jako metoda obiektowa klasy `Scouting Report`:
+- `+changeStatus(playerStatus: PlayerStatus): void` - bez walidacji przejść.
 
-- `+ validateMatchesObservedByScout(): void` - dla każdego meczu z `basedOnMatches` sprawdza, czy znajduje się on w `createdBy.watchedMatches`; w przeciwnym przypadku rzuca wyjątek walidacyjny.
+Pełna maszyna stanów pozostanie dokumentem analitycznym pod przyszłą funkcjonalność aktualizacji statusu.
 
-Metoda będzie wywoływana w serwisie aplikacyjnym przed zapisem raportu (w tym samym miejscu co `validateDetailedRatings()`), aby nigdy nie utrwalić w bazie powiązania `Scouting Report - Match` niepopartego wcześniej istniejącym powiązaniem `Scout - Match`.
+== Klasa `Scouting Report` - logika domenowa na encji
 
-== Atrybuty pochodne - metody `get{AtrybutPochodny}()`
+Reguły biznesowe raportu skautingowego *pozostaną na encji* `ScoutingReport` i powiązanej `DetailedRating` (Rich Domain Model - orkiestracja w serwisie, patrz dalsza część rozdziału). Na diagramie projektowym *nie pojawi się* fabrykująca metoda `createReport(...)` z modelu analitycznego na rzecz przeniesienia jej do serwisu.
 
-Wszystkie atrybuty pochodne (oznaczone w diagramie prefiksem `/`) zostaną zaimplementowane jako *gettery wyliczające wartość on-the-fly* na podstawie powiązanych obiektów, bez utrwalania w bazie (`@Transient` w Hibernate):
+=== Kompozycja z `Detailed Rating`
 
-- `Player.getAverageRating(): BigDecimal` - średnia z `finalRating` wszystkich raportów zawodnika (w przypadku braku raportów zwraca `0`, co umożliwia poprawne sortowanie).
-- `Scouting Report.getFinalRating(): BigDecimal` - średnia ważona ocen szczegółowych (`rating × weight`).
-- `Delegation.getCost(): BigDecimal` - liczone według wzoru z wymagania 21.
-- `Match Stats.getFieldGoalPercentage()` / `getThreePointPercentage()` / `getFreeThrowPercentage()` - procenty skuteczności (analogicznie dla `Shooting Analysis`).
+Zgodnie z wymaganiem 17 ocena szczegółowa nie będzie istnieć bez raportu - mapowanie Hibernate opisano w sekcji kompozycji. Kolekcja `List<DetailedRating>` będzie zarządzana przy zapisie encji nadrzędnej.
 
-== Ograniczenia unikalności (`unique`)
+=== Walidacje i ograniczenia obiektowe
 
-Atrybuty oznaczone jako unikatowe (`email` w `Person`, `license_number` w `Scout`) zostaną zmapowane adnotacją `@Column(unique = true, nullable = false)` w Hibernate. Ograniczenie jest egzekwowane na poziomie bazy (constraint `UNIQUE`) - próba zapisu duplikatu kończy się wyjątkiem `DataIntegrityViolationException` przechwytywanym w warstwie serwisowej i tłumaczonym na czytelny komunikat dla użytkownika (NFR 6).
+*Suma wag (wymaganie 18, wyjątek E3):*
+- `+validateDetailedRatings(): void` - suma wag `BigDecimal` musi wynosić dokładnie `1.0`; przy braku ocen - wyjątek (E2).
 
-== Ograniczenie istnienia obu drużyn przy tworzeniu meczu
+*Podzbiór meczów `{subset}`:*
+- `+validateMatchesObservedByScout(): void` - każdy mecz z `basedOnMatches` musi należeć do `createdBy.watchedMatches`.
 
-Wymaganie 12 narzuca, że każdy mecz ma dokładnie dwie drużyny i pełnią one różne role: `host` oraz `guest`. Ograniczenie to zostanie wymuszone już na etapie tworzenia obiektu `Match`.
+*Pojedyncza ocena (E4):*
+- `+validateRanges(): void` - `rating ∈ [1, 10]`, `weight ∈ [0.0, 1.0]`, niepuste `type` i `comment`.
 
-- W konstruktorze klasy `Match` zostanie wywołana metoda:
-  - `+ validateBothTeams(): void`
-- Metoda sprawdzi, że:
-  - `host != null`,
-  - `guest != null`,
-  - `host.id != guest.id` (lub referencyjnie `host != guest`),
-  - role są kompletne (mecz zawsze ma oba końce relacji: gospodarza i gościa).
-- Jeżeli warunek nie zostanie spełniony, konstruktor przerwie tworzenie obiektu przez rzucenie wyjątku domenowego (np. `IllegalArgumentException` / własny `DomainValidationException`).
+Metody agregatu raportu będą wywoływane w serwisie aplikacyjnym tuż przed `save` (scenariusz `Create Scouting Report`, krok 13).
 
-W praktyce oznacza to, że nie da się utworzyć ani zapisać meczu bez przypisanego gospodarza i gościa oraz nie da się utworzyć meczu, w którym obie role wskazują ten sam klub.
+=== Atrybut pochodny `/finalRating`
 
-== Implementacja atrybutów klasowych, dostępu do danych i metod obiektowych
+`+getFinalRating(): BigDecimal` - średnia ważona `rating × weight` po ocenach szczegółowych; `@Transient`, bez kolumny w bazie.
 
-*Atrybuty klasowe* (wymagania 22 i 23) - na encji `Delegation`:
-- `private static final BigDecimal DAILY_LIVING_COST = 250`
-- `private static final BigDecimal FLIGHT_COST = 1500`
-- użycie w `getCost()` przy liczeniu kosztu delegacji
+== Pozostałe atrybuty pochodne i ograniczenia `{unique}`
 
-*Dostęp do zbiorów obiektów (zamiast `static Set` w encji)* - repozytoria Spring Data JPA, np.:
-- `PlayerRepository extends JpaRepository<Player, Long>` - `findAll()`, zapytania po `player_status`, `position`,
-- `ClubRepository` - `findByLeague(...)`,
-- `ScoutingReportRepository`, `DelegationRepository` itd. według potrzeb przypadków użycia,
-- zapis i usuwanie: `repository.save(entity)`, `repository.delete(entity)` (kaskady kompozycji obsłuży Hibernate).
+*Gettery `@Transient` (prefiks `/` na diagramie):*
+- `Player.getAverageRating()` - średnia `/finalRating` raportów zawodnika; przy braku raportów zwróci `0` (sortowanie listy).
+- `Delegation.getCost()` - wzór z wymagania 21; atrybuty klasowe `DAILY_LIVING_COST = 250`, `FLIGHT_COST = 1500` na encji `Delegation`.
+- `ShootingAnalysis.getPercentage()` - procent trafień w sezonie i strefie (wymaganie 14).
 
-*Nawigacja po asocjacjach* - pola kolekcji / referencji w encjach (`List`, `Set`) z adnotacjami JPA, np. `@OneToMany List<DetailedRating> detailedRatings` w `ScoutingReport`, `@OneToMany List<MatchStats> matchStats` w `Player`.
+*Unikalność pojedynczych atrybutów:* `email` (`Person`), `license_number` (`Scout`) - `@Column(unique = true)`; naruszenie da `DataIntegrityViolationException`, obsłużone w warstwie aplikacji (NFR 6).
 
-*Metody obiektowe na encjach* - m.in.:
-- gettery/settery pól oraz `@Enumerated` dla enumów,
-- `Player.becomeUniversityPlayer(...)`, `Player.becomeProfessionalPlayer(...)`, `Player.changeStatus(PlayerStatus)`,
-- `ScoutingReport.validateDetailedRatings()` (wywołanie przed `save` w serwisie),
-- `@Transient` gettery pochodne: `getFinalRating()`, `getAverageRating()`, `getCost()`, procenty w `MatchStats` / `ShootingAnalysis`.
+*Unikalność analizy strzeleckiej per zawodnik, sezon i strefa* - para `(season, range)` co najwyżej raz na zawodnika (ta sama strefa może wrócić w innym sezonie):
+
+```java
+@Table(name = "shooting_analysis",
+       uniqueConstraints = @UniqueConstraint(
+           name = "uc_player_season_range",
+           columnNames = {"player_id", "season", "range_label"}))
+```
+
+== Ograniczenie dwóch drużyn w `Match`
+
+Wymaganie 12: mecz ma dokładnie dwie różne drużyny (`host`, `guest`). Powstanie metoda `+ validateBothTeams(): void` (wywołana przy tworzeniu / zapisie meczu), sprawdzająca m.in. `host != null`, `guest != null`, `host.id != guest.id`. Niespełnienie warunku przerwie operację wyjątkiem domenowym.
+
+#pagebreak()
+
+== Warstwa aplikacji - Spring, repozytoria i serwisy
+
+=== Repozytoria
+
+Zamiast ekstensji w postaci `static Set` w encjach powstaną interfejsy Spring Data JPA, np.:
+- `PlayerRepository` - `findAll()`, `findByPlayerStatus`, `findByPosition`, `findByClubId`,
+- `ScoutRepository` - `findByEmail`, `findByLicenseNumber`,
+- `ScoutingReportRepository` - `findByCreatedById`, `findByPlayerId`,
+- dalsze (`ClubRepository`, `DelegationRepository` …) według przypadków użycia.
+
+Zapis i usuwanie: `repository.save(entity)`, `repository.delete(entity)`; kaskady kompozycji obsłuży Hibernate.
+
+=== Serwisy przypadków użycia
+
+Dla wyróżnionego scenariusza *Create Scouting Report* (oraz `<<include>>` / `<<extend>>`) powstaną m.in.:
+- `ViewPlayersListService` - lista zawodników obserwowanych przez skauta,
+- `ViewPlayerMatchesService` - przecięcie meczów zawodnika i meczów obserwowanych przez skauta,
+- `ScoutingReportService` - utworzenie raportu (przepływ domyślny i A1 z wybranymi meczami).
+
+Kontroler REST (`ScoutingReportController`) będzie delegował wywołania do tych serwisów.
+
+=== Transakcje i komunikaty błędów
+
+`ScoutingReportService` zostanie objęty `@Transactional`; metody mutujące - `@Transactional(rollbackFor = Exception.class)`. Każdy błąd walidacji lub brak encji przerwie transakcję - częściowy raport nie trafi do bazy. `GlobalExceptionHandler` zmapuje wyjątki na odpowiedzi HTTP (m.in. `422` dla reguł biznesowych E1-E5).
+
+== Rich Domain Model - `createReport` w serwisie, reguły na encji
+
+Zostanie przyjęty *Rich Domain Model*: inwarianty i wyliczenia na `ScoutingReport` / `DetailedRating`, *orkiestracja* utworzenia raportu w `ScoutingReportService`.
+
+*W serwisie (nie na diagramie domenowym):*
+- złożenie agregatu: `new ScoutingReport()` (konstruktor bezargumentowy JPA), settery (`setCreatedBy`, `setPlayer`, `setNote`, …), powiązanie ocen z raportem,
+- wywołanie metod domenowych raportu,
+- `scoutingReportRepository.save(report)`.
+
+Podział wynika z wymogu `@NoArgsConstructor` w JPA oraz z reguł obejmujących wiele agregatów naraz (np. przecięcie zbiorów meczów). Fabryka `createReport` z diagramu analitycznego *nie trafi* na diagram projektowy - jej rolę przejmie `ScoutingReportService.createScoutingReport(...)`.
+
+== Uwierzytelnianie - uproszczenie na potrzeby prezentacji
+
+W systemie docelowym powstaną *logowanie i rejestracja* oraz powiązanie sesji ze `Scout` / `Director`. Na etapie pierwszej implementacji i demonstracji *Create Scouting Report* warstwa bezpieczeństwa zostanie pominięta:
+
+- w ścieżce API pozostanie parametr `scoutId`, lecz frontend i testy będą używać *stałego identyfikatora* skauta testowego (obiekt zasilany przy starcie aplikacji),
+- nie powstaną JWT, Spring Security ani endpointy `/login` / `/register`.

@@ -12,7 +12,12 @@
   set page(
     paper: "a4",
     margin: (left: 25mm, right: 25mm, top: 25mm, bottom: 25mm),
-    numbering: none,
+    numbering: (..args) => {
+      let current = args.pos().at(0)
+      if current > 1 {
+        str(current)
+      }
+    },
     number-align: center,
   )
 
@@ -57,9 +62,6 @@
   ]
   pagebreak()
 
-  // Włączenie numeracji stron (od nowa)
-  set page(numbering: "1")
-  counter(page).update(1)
 
   // Spis treści
   outline(title: "Spis Treści", depth: 3, indent: auto)
