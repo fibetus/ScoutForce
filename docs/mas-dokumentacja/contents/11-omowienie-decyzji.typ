@@ -135,7 +135,7 @@ Metody agregatu raportu będą wywoływane w serwisie aplikacyjnym tuż przed `s
 - `Delegation.getCost()` - wzór z wymagania 21; atrybuty klasowe `DAILY_LIVING_COST = 250`, `FLIGHT_COST = 1500` na encji `Delegation`.
 - `ShootingAnalysis.getPercentage()` - procent trafień w sezonie i strefie (wymaganie 14).
 
-*Unikalność pojedynczych atrybutów:* `email` (`Person`), `license_number` (`Scout`) - `@Column(unique = true)`; naruszenie da `DataIntegrityViolationException`, obsłużone w warstwie aplikacji (NFR 6).
+*Unikalność pojedynczych atrybutów:* `email` (`Person`), `license_number` (`Scout`) - `@Column(unique = true)`; naruszenie da `DataIntegrityViolationException`, obsłużone w warstwie aplikacji.
 
 *Unikalność analizy strzeleckiej per zawodnik, sezon i strefa* - para `(season, range)` co najwyżej raz na zawodnika (ta sama strefa może wrócić w innym sezonie):
 
