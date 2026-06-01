@@ -16,8 +16,6 @@ import java.util.List;
 /**
  * Player entity.
  *
- * Wymaganie 2: osoby w systemie dzielą się na pracowników klubu i zawodników
- * (kompletnie i rozłącznie). Player jest podklasą {@link Person}.
  *
  * Dynamic inheritance (University / Professional experience) is modelled
  * using the Strategy pattern: Player "has assigned" exactly one

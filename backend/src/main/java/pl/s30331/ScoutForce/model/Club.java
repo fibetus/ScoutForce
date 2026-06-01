@@ -11,8 +11,6 @@ import java.util.List;
 /**
  * Club (basketball team / organisation).
  *
- * Wymaganie 6: dla każdego klubu pamiętamy nazwę, miasto oraz ligę;
- * dla niektórych klubów (NBA) dodatkowo konferencję i dywizję.
  *
  * Associations:
  *  - Club 1 ──* Player        (players)

@@ -9,11 +9,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Scout – pracownik terenowy obserwujący zawodników na meczach
- * i tworzący raporty skautingowe.
+ * Scout – a field employee who observes players at matches
+ * and creates scouting reports.
  *
- * Wymaganie 4: dla skauta dodatkowo: unikatowy numer licencji,
- * specjalizacja oraz region obserwacji.
  *
  * Associations:
  *  - Scout 1 ──* ScoutingReport   (createdReports)

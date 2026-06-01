@@ -10,10 +10,6 @@ import java.math.BigDecimal;
 /**
  * Shooting Analysis – per-zone, per-season shooting record for a {@link Player}.
  *
- * Wymaganie 14: dla każdego zawodnika prowadzona jest analiza strzelecka
- * per sezon i per dystans. Analiza składa się z liczby rzutów oddanych
- * i trafionych w danym sezonie i strefie. Dla analizy można obliczyć
- * procent skuteczności w zadanym sezonie i strefie.
  *
  * Constraints:
  *  – {@code (player_id, season, range)} is unique – each (range, season) pair

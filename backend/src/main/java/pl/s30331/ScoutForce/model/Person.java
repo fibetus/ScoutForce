@@ -20,10 +20,6 @@ import java.time.LocalDate;
  * Mapping: JOINED inheritance – each subclass has its own table linked by
  * {@code person_id} FK to {@link #id}.
  *
- * Attributes from the requirements (rozdz. 2, wymaganie 1):
- *  – firstName, lastName
- *  – birthDate (data urodzenia)
- *  – email (unikatowy adres do kontaktu, każda osoba w systemie)
  */
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)

@@ -167,15 +167,12 @@ public class ScoutingReportService {
     private void validateInput(String note,
                                RecommendationType recommendation,
                                List<DetailedRating> ratings) {
-        // E5 – brak rekomendacji lub notki
         if (note == null || note.isBlank() || recommendation == null) {
             throw new IllegalStateException("Notes and recommendation cannot be empty.");
         }
-        // E2 – brak ocen szczegółowych
         if (ratings == null || ratings.isEmpty()) {
             throw new IllegalStateException("Report needs at least one Detailed Rating.");
         }
-        // E4 – walidacja zakresów każdej oceny szczegółowej
         for (DetailedRating dr : ratings) {
             dr.validateRanges();
         }

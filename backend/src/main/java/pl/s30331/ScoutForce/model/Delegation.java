@@ -14,13 +14,10 @@ import java.util.List;
 /**
  * Delegation – a scouting trip assigned to a Scout that includes one or more Matches.
  *
- * Wymaganie 20: każda delegacja jest organizowana dla dokładnie jednego skauta
- * i utworzona przez dokładnie jednego dyrektora klubu. Pamiętamy: nazwę,
- * datę rozpoczęcia, datę zakończenia oraz status.
  *
  * Class-level (static) attributes:
- *  DAILY_LIVING_COST = 250 PLN/day  (wymaganie 22)
- *  FLIGHT_COST       = 1500 PLN     (wymaganie 23)
+ *  DAILY_LIVING_COST = 250$/day
+ *  FLIGHT_COST       = 1500$
  *
  * Derived attribute:
  *  /cost – calculated on-the-fly from trip duration and constants (not persisted).

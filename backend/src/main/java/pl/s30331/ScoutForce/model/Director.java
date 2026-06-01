@@ -9,10 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Director – dyrektor sportowy klubu.
+ * Director - sports director of a club.
  *
- * Wymaganie 5 / 20: tworzenie nowych delegacji jest realizowane wyłącznie
- * przez dyrektora klubu.
  *
  * Associations:
  *  - Director 1 ──* Delegation (createdDelegations)

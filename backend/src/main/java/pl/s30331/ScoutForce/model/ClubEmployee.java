@@ -11,14 +11,11 @@ import java.time.LocalDate;
 /**
  * Abstract club employee – concrete subclasses are {@link Scout} and {@link Director}.
  *
- * Wymaganie 3: pracownicy klubu dzielą się m.in. na dyrektorów i skautów,
- * podział kompletny i rozłączny, ale otwarty na przyszłe typy.
  *
- * Wymaganie 7: każdy pracownik klubu jest zatrudniony w dokładnie jednym klubie.
  *
  * Attributes:
  *  – hireDate
- *  – dailyRate (dzienna stawka wynagrodzenia)
+ *  – dailyRate (daily pay rate)
  *
  * Associations:
  *  – ClubEmployee *──1 Club (employer)
