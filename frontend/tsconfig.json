@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    /* Language and emit */
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+
+    /* Bundler mode: Vite handles transpilation/bundling, tsc only type-checks */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Strictness */
+    "strict": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Ambient types for Vite (provides import.meta.env typing) */
+    "types": ["vite/client"]
+  },
+  "include": ["src", "vite.config.ts"]
+}

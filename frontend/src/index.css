@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * Global base styles.
+ * The app shell sets the dark background and Inter font on its root element;
+ * we mirror it on html/body here to avoid a white flash before React mounts.
+ */
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: #0b0b0f;
+    color: #f5f5f7;
+    font-family: Inter, system-ui, sans-serif;
+  }
+}
+
+/*
+ * slideIn keyframe used by the Toast component (animate-[slideIn_0.2s_ease-out]).
+ * The toast is anchored top-right, so it slides in from the right edge while fading in.
+ */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(1rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
