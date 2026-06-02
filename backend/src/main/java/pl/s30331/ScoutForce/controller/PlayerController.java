@@ -8,13 +8,10 @@ import pl.s30331.ScoutForce.controller.dto.MatchStatsDto;
 import pl.s30331.ScoutForce.controller.dto.MatchWithStatsDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerKpiDto;
-import pl.s30331.ScoutForce.model.Club;
-import pl.s30331.ScoutForce.model.Match;
-import pl.s30331.ScoutForce.model.MatchStats;
-import pl.s30331.ScoutForce.model.Player;
-import pl.s30331.ScoutForce.model.Scout;
+import pl.s30331.ScoutForce.model.*;
 import pl.s30331.ScoutForce.repository.PlayerRepository;
 import pl.s30331.ScoutForce.repository.ScoutRepository;
+import pl.s30331.ScoutForce.service.ScoutingReportService;
 import pl.s30331.ScoutForce.service.ViewPlayerMatchesService;
 import pl.s30331.ScoutForce.service.ViewPlayersListService;
 
@@ -38,17 +35,14 @@ import java.util.function.ToIntFunction;
  * root's in-memory associations. No foreign-key filtering finders are used.</p>
  */
 @RestController
-@RequestMapping("/api/scouts/{scoutId}")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
 public class PlayerController {
 
-    private final ViewPlayersListService   viewPlayersListService;
-    private final ViewPlayerMatchesService viewPlayerMatchesService;
-    private final ScoutRepository          scoutRepository;
-    private final PlayerRepository         playerRepository;
-
-    // ── <<include>> View Players List ─────────────────────────────────────────
+    private final ViewPlayersListService    viewPlayersListService;
+    private final ViewPlayerMatchesService  viewPlayerMatchesService;
+    private final ScoutingReportService     scoutingReportService;
 
     /**
      * Returns the players the given scout has observed (those eligible for a new report).
@@ -61,11 +55,9 @@ public class PlayerController {
      * @return {@code 200 OK} with the list of observed players as {@link PlayerDto}
      * @throws jakarta.persistence.EntityNotFoundException if no scout exists for the given id (mapped to {@code 404})
      */
-    @GetMapping("/players")
+    @GetMapping("/scouts/{scoutId}/players")
     public ResponseEntity<List<PlayerDto>> getObservablePlayers(@PathVariable Long scoutId) {
-        Scout scout = scoutRepository.findById(scoutId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Scout not found: " + scoutId));
+        Scout scout = viewPlayersListService.getScout(scoutId);
 
         List<PlayerDto> players = viewPlayersListService.getPlayersObservedByScout(scout).stream()
                 .map(player -> toPlayerDto(player, scout))
@@ -73,8 +65,6 @@ public class PlayerController {
 
         return ResponseEntity.ok(players);
     }
-
-    // ── <<extend>> View Player's Matches ──────────────────────────────────────
 
     /**
      * Returns the matches observed by the scout in which the given player also appeared, each
@@ -95,17 +85,13 @@ public class PlayerController {
      * @throws jakarta.persistence.EntityNotFoundException if no scout or player exists for the given
      *         ids (mapped to {@code 404})
      */
-    @GetMapping("/players/{playerId}/matches")
+    @GetMapping("/scouts/{scoutId}/players/{playerId}/matches")
     public ResponseEntity<List<MatchWithStatsDto>> getPlayerMatchesForScout(
             @PathVariable Long scoutId,
             @PathVariable Long playerId) {
 
-        Scout scout = scoutRepository.findById(scoutId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Scout not found: " + scoutId));
-        Player player = playerRepository.findById(playerId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Player not found: " + playerId));
+        Scout scout = viewPlayersListService.getScout(scoutId);
+        Player player = viewPlayersListService.getPlayer(playerId);
 
         List<Match> matches = viewPlayerMatchesService.getObservedMatchesForPlayer(player, scout);
 
@@ -120,10 +106,67 @@ public class PlayerController {
         return ResponseEntity.ok(body);
     }
 
-    // ── Mapping helpers ───────────────────────────────────────────────────────
+    /**
+     * Returns a list of all players in the system, enriched with their global statistics.
+     *
+     * <p>This endpoint loads all {@link Player} entities via {@link ViewPlayersListService#getAllPlayers()}
+     * and maps them to {@link PlayerDto}s. Global statistics (KPIs) are computed across all matches
+     * the player has participated in.</p>
+     *
+     * @return {@code 200 OK} with the list of all players as {@link PlayerDto}
+     */
+    @GetMapping("/players")
+    public ResponseEntity<List<PlayerDto>> getPlayersWithStats() {
+        List<PlayerDto> players = viewPlayersListService.getAllPlayers().stream()
+                .map(this::toPlayerDto)
+                .toList();
+
+        return ResponseEntity.ok(players);
+    }
 
     /**
-     * Maps a {@link Player} entity to its web-layer {@link PlayerDto} representation.
+     * Returns a single player by ID, enriched with their global statistics.
+     *
+     * <p>The {@link Player} aggregate root is loaded by id; global statistics (KPIs) are computed
+     * across all matches the player has participated in.</p>
+     *
+     * @param playerId the identifier of the player requested
+     * @return {@code 200 OK} with the player as {@link PlayerDto}
+     * @throws jakarta.persistence.EntityNotFoundException if no player exists for the given id (mapped to {@code 404})
+     */
+    @GetMapping("/players/{playerId}")
+    public ResponseEntity<PlayerDto> getPlayerWithStats(@PathVariable Long playerId) {
+        PlayerDto player = toPlayerDto(viewPlayersListService.getPlayer(playerId));
+
+        return ResponseEntity.ok(player);
+    }
+
+    /**
+     * Returns all scouting reports authored for the given player.
+     *
+     * <p>Reports are obtained by navigating the {@link Player#getScoutingReports()} association.
+     * If no reports exist, the endpoint returns {@code 204 No Content}.</p>
+     *
+     * @param playerId the identifier of the player whose reports are requested
+     * @return {@code 204 No Content} when the player has no reports, otherwise
+     *         {@code 200 OK} with the list of {@link ScoutingReport}s
+     * @throws jakarta.persistence.EntityNotFoundException if no player exists for the given id (mapped to {@code 404})
+     */
+    @GetMapping("/players/{playerId}/reports")
+    public ResponseEntity<List<ScoutingReport>> getPlayerReports(@PathVariable Long playerId) {
+        List<ScoutingReport> reports = scoutingReportService.getReportsByPlayer(playerId);
+
+        if (reports.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(reports);
+    }
+
+
+    /**
+     * Maps a {@link Player} entity to its web-layer {@link PlayerDto} representation,
+     * scoped to a specific scout's observations.
      *
      * <p>Basic fields are copied directly, the club is projected to a {@link ClubDto}, and the
      * {@code position}/{@code playerStatus} enums are exposed as their enum NAME. The
@@ -150,6 +193,36 @@ public class PlayerController {
                 player.getAverageRating(),
                 toClubDto(player.getClub()),
                 computePlayerKpi(player, scout)
+        );
+    }
+
+    /**
+     * Maps a {@link Player} entity to its web-layer {@link PlayerDto} representation,
+     * using global statistics.
+     *
+     * <p>Basic fields are copied directly, the club is projected to a {@link ClubDto}, and the
+     * {@code position}/{@code playerStatus} enums are exposed as their enum NAME. The
+     * {@code averageRating} is the derived value from {@link Player#getAverageRating()} ({@code 0}
+     * when the player has no reports). The {@code kpi} averages are computed server-side by
+     * {@link #computePlayerKpi(Player)} over all matches the player appeared in.</p>
+     *
+     * @param player the player entity to map
+     * @return the corresponding {@link PlayerDto}
+     */
+    private PlayerDto toPlayerDto(Player player) {
+        return new PlayerDto(
+                player.getId(),
+                player.getFirstName(),
+                player.getLastName(),
+                player.getBirthDate(),
+                player.getPosition().name(),
+                player.getPlayerStatus().name(),
+                player.getWeight(),
+                player.getHeight(),
+                player.getWingspan(),
+                player.getAverageRating(),
+                toClubDto(player.getClub()),
+                computePlayerKpi(player)
         );
     }
 
@@ -261,25 +334,33 @@ public class PlayerController {
      * @return a {@link PlayerKpiDto} with the averaged box-score values
      */
     private PlayerKpiDto computePlayerKpi(Player player, Scout scout) {
-        // Association navigation only: observed matches → their match stats → this player's entries.
         List<MatchStats> playerStats = viewPlayerMatchesService
                 .getObservedMatchesForPlayer(player, scout).stream()
                 .flatMap(match -> match.getMatchStats().stream())
                 .filter(stats -> belongsToPlayer(stats, player))
                 .toList();
 
-        if (playerStats.isEmpty()) {
-            return zeroKpi();
-        }
+        return averageForEachStat(playerStats);
+    }
 
-        return new PlayerKpiDto(
-                average(playerStats, MatchStats::getMinutesPlayed),
-                average(playerStats, MatchStats::getPoints),
-                average(playerStats, MatchStats::getRebounds),
-                average(playerStats, MatchStats::getAssists),
-                average(playerStats, MatchStats::getSteals),
-                average(playerStats, MatchStats::getBlocks)
-        );
+    /**
+     * Computes a player's global box-score KPI averages over all matches they participated in.
+     *
+     * <p>This follows the same in-memory aggregation logic as {@link #computePlayerKpi(Player, Scout)},
+     * but without scoping to a scout's observations. All {@link MatchStats} associated with the
+     * player are navigated to and averaged.</p>
+     *
+     * @param player the player whose global KPI averages are computed
+     * @return a {@link PlayerKpiDto} with the averaged box-score values
+     */
+    private PlayerKpiDto computePlayerKpi(Player player) {
+        List<MatchStats> playerStats = viewPlayerMatchesService
+                .getMatchesForPlayer(player).stream()
+                .flatMap(match -> match.getMatchStats().stream())
+                .filter(stats -> belongsToPlayer(stats, player))
+                .toList();
+
+        return averageForEachStat(playerStats);
     }
 
     /**
@@ -331,6 +412,29 @@ public class PlayerController {
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO
+        );
+    }
+
+    /**
+     * Aggregates all six box-score statistics into a {@link PlayerKpiDto} by averaging them.
+     *
+     * <p>If the input list is empty, a zero-valued KPI is returned to avoid division by zero.</p>
+     *
+     * @param playerStats the list of match statistics to aggregate
+     * @return a {@link PlayerKpiDto} containing the averages for all stats
+     */
+    private PlayerKpiDto averageForEachStat(List<MatchStats> playerStats) {
+        if (playerStats.isEmpty()) {
+            return zeroKpi();
+        }
+
+        return new PlayerKpiDto(
+                average(playerStats, MatchStats::getMinutesPlayed),
+                average(playerStats, MatchStats::getPoints),
+                average(playerStats, MatchStats::getRebounds),
+                average(playerStats, MatchStats::getAssists),
+                average(playerStats, MatchStats::getSteals),
+                average(playerStats, MatchStats::getBlocks)
         );
     }
 }
