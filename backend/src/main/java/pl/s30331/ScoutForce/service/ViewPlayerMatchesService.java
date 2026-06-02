@@ -28,20 +28,44 @@ public class ViewPlayerMatchesService {
     /**
      * Returns matches observed by the scout in which the player also participated.
      *
-     * Navigation:
-     *   player → matchStats → match (player's matches)
-     *   scout  → watchedMatches     (scout's matches)
-     *   result = intersection
+     * <p>This method implements the core logic for intersecting two aggregate roots'
+     * associations in memory:</p>
+     * <ul>
+     *   <li>{@code player -> matchStats -> match} (all matches the player played in)</li>
+     *   <li>{@code scout -> watchedMatches} (all matches the scout has observed)</li>
+     * </ul>
+     * <p>The result is the subset of player's matches that are also present in the scout's
+     * watched list. No foreign-key filtering queries are used, adhering to the project's
+     * association-navigation mandate.</p>
+     *
+     * @param player the player whose matches are being queried
+     * @param scout  the scout whose observations scope the result
+     * @return the intersection of matches as a list
      */
     public List<Match> getObservedMatchesForPlayer(Player player, Scout scout) {
-        // Matches in which the player appeared
         List<Match> playerMatches = player.getMatchStats().stream()
                 .map(MatchStats::getMatch)
-                .collect(Collectors.toList());
+                .toList();
 
-        // Intersection with what the scout has watched
         return scout.getWatchedMatches().stream()
                 .filter(playerMatches::contains)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    /**
+     * Returns all matches in which the given player participated.
+     *
+     * <p>Obtained by navigating the {@link Player#getMatchStats()} association and
+     * mapping each entry to its corresponding {@link Match}.</p>
+     *
+     * @param player the player whose matches are requested
+     * @return a list of all matches the player participated in
+     */
+    public List<Match> getMatchesForPlayer(Player player) {
+        List<Match> playerMatches = player.getMatchStats().stream()
+                .map(MatchStats::getMatch)
+                .toList();
+
+        return playerMatches;
     }
 }
