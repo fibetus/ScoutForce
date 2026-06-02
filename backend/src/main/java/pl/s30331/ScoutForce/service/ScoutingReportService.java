@@ -64,12 +64,18 @@ public class ScoutingReportService {
     /**
      * Creates and persists a new Scouting Report (default flow – all observed matches).
      *
+     * <p>The process follows a multi-stage validation: pre-input checks, aggregate fetching,
+     * determining the match scope via association navigation, building the aggregate, and final
+     * invariant validation before persistence.</p>
+     *
      * @param scoutId        ID of the scout creating the report
      * @param playerId       ID of the player being scouted
      * @param note           free-text observation note
      * @param recommendation draft recommendation
      * @param ratings        list of DetailedRating objects built from the frontend payload
      * @return the persisted ScoutingReport with its generated id
+     * @throws IllegalStateException if input validation fails or if the player has no observed matches
+     * @throws jakarta.persistence.EntityNotFoundException if the scout or player is not found
      */
     @Transactional(rollbackFor = Exception.class)
     public ScoutingReport createScoutingReport(Long scoutId,
@@ -82,8 +88,8 @@ public class ScoutingReportService {
         validateInput(note, recommendation, ratings);
 
         // 2. Fetch aggregates
-        Scout  scout  = loadScout(scoutId);
-        Player player = loadPlayer(playerId);
+        Scout  scout  = getScout(scoutId);
+        Player player = getPlayer(playerId);
 
         // 3. Determine scope via association navigation – all observed matches
         //    of the player that the scout has actually watched
@@ -107,6 +113,19 @@ public class ScoutingReportService {
     /**
      * Creates a Scouting Report scoped to a specific subset of matches
      * (alternative flow A1 – <<extend>> View Player's Matches).
+     *
+     * <p>Validation ensures that every match ID in {@code selectedMatchIds} belongs to the
+     * scout's {@code watchedMatches} association.</p>
+     *
+     * @param scoutId           ID of the scout creating the report
+     * @param playerId          ID of the player being scouted
+     * @param selectedMatchIds  IDs of the specific matches to base the report on
+     * @param note              free-text observation note
+     * @param recommendation    draft recommendation
+     * @param ratings           list of DetailedRating objects
+     * @return the persisted ScoutingReport
+     * @throws IllegalStateException if any selected match was not observed by the scout or if validation fails
+     * @throws jakarta.persistence.EntityNotFoundException if the scout or player is not found
      */
     @Transactional(rollbackFor = Exception.class)
     public ScoutingReport createScoutingReportFromSelectedMatches(
@@ -124,18 +143,18 @@ public class ScoutingReportService {
         }
 
         // 2. Fetch aggregates
-        Scout  scout  = loadScout(scoutId);
-        Player player = loadPlayer(playerId);
+        Scout  scout  = getScout(scoutId);
+        Player player = getPlayer(playerId);
 
         // 3. Resolve selected matches – strict validation: every requested ID
         //    must be in scout.watchedMatches, otherwise reject the request.
         List<Long> watchedIds = scout.getWatchedMatches().stream()
                 .map(Match::getId)
-                .collect(Collectors.toList());
+                .toList();
 
         List<Long> unobserved = selectedMatchIds.stream()
                 .filter(id -> !watchedIds.contains(id))
-                .collect(Collectors.toList());
+                .toList();
 
         if (!unobserved.isEmpty()) {
             throw new IllegalStateException(
@@ -163,6 +182,11 @@ public class ScoutingReportService {
     /**
      * Stage 1 – pre-input validation. Pure in-memory checks, no DB hit.
      * Fails fast on E5 (note/recommendation), E2 (no ratings), E4 (ranges).
+     *
+     * @param note           the observation note to validate
+     * @param recommendation the recommendation to validate
+     * @param ratings        the list of ratings to validate
+     * @throws IllegalStateException if any validation check fails
      */
     private void validateInput(String note,
                                RecommendationType recommendation,
@@ -178,13 +202,27 @@ public class ScoutingReportService {
         }
     }
 
-    private Scout loadScout(Long scoutId) {
+    /**
+     * Fetches a scout by ID.
+     *
+     * @param scoutId the identifier to look up
+     * @return the {@link Scout} entity
+     * @throws jakarta.persistence.EntityNotFoundException if not found
+     */
+    private Scout getScout(Long scoutId) {
         return scoutRepository.findById(scoutId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Scout not found: " + scoutId));
     }
 
-    private Player loadPlayer(Long playerId) {
+    /**
+     * Fetches a player by ID.
+     *
+     * @param playerId the identifier to look up
+     * @return the {@link Player} entity
+     * @throws jakarta.persistence.EntityNotFoundException if not found
+     */
+    private Player getPlayer(Long playerId) {
         return playerRepository.findById(playerId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Player not found: " + playerId));
@@ -193,6 +231,14 @@ public class ScoutingReportService {
     /**
      * Builds a fully-wired ScoutingReport aggregate (composition with
      * DetailedRatings, association with basedOnMatches). Does not persist.
+     *
+     * @param scout          the authoring scout
+     * @param player         the player being scouted
+     * @param basedOnMatches the matches this report is derived from
+     * @param note           the observation note
+     * @param recommendation the scout's recommendation
+     * @param ratings        the detailed ratings
+     * @return a new, wired {@link ScoutingReport} instance
      */
     private ScoutingReport buildReport(Scout scout,
                                        Player player,
@@ -208,7 +254,6 @@ public class ScoutingReportService {
         report.setPlayer(player);
         report.setBasedOnMatches(basedOnMatches);
 
-        // composition – set the owning side on every child
         for (DetailedRating dr : ratings) {
             dr.setScoutingReport(report);
         }
@@ -219,10 +264,13 @@ public class ScoutingReportService {
     /**
      * Stage 4 + 5 – aggregate-level invariants and persistence.
      * Runs the domain methods declared on {@link ScoutingReport}, then saves.
+     *
+     * @param report the report to validate and save
+     * @return the persisted report
      */
     private ScoutingReport persistValidated(ScoutingReport report) {
-        report.validateDetailedRatings();        // E3 – sum of weights = 1.0
-        report.validateMatchesObservedByScout(); // {subset} – defense in depth
+        report.validateDetailedRatings();
+        report.validateMatchesObservedByScout();
         return scoutingReportRepository.save(report);
     }
 
@@ -230,21 +278,36 @@ public class ScoutingReportService {
     // Other use cases – STUB (not implemented)
     // ────────────────────────────────────────────────────────────────────────
 
-    /** Retrieves all reports authored by a scout (stub). */
+    /**
+     * Retrieves all reports authored by a scout (stub).
+     *
+     * @param scoutId ID of the scout
+     * @return list of reports
+     * @throws UnsupportedOperationException currently
+     */
     @Transactional(readOnly = true)
     public List<ScoutingReport> getReportsByScout(Long scoutId) {
         // TODO: implement when needed
         throw new UnsupportedOperationException("Not yet implemented.");
     }
 
-    /** Retrieves all reports for a player (stub). */
+    /**
+     * Retrieves all reports for a player by navigating the association.
+     *
+     * @param playerId ID of the player
+     * @return list of reports associated with the player
+     */
     @Transactional(readOnly = true)
     public List<ScoutingReport> getReportsByPlayer(Long playerId) {
-        // TODO: implement when needed
-        throw new UnsupportedOperationException("Not yet implemented.");
+        return getPlayer(playerId).getScoutingReports();
     }
 
-    /** Deletes a scouting report (stub). */
+    /**
+     * Deletes a scouting report (stub).
+     *
+     * @param reportId ID of the report to delete
+     * @throws UnsupportedOperationException currently
+     */
     public void deleteReport(Long reportId) {
         // TODO: implement when needed
         throw new UnsupportedOperationException("Not yet implemented.");
