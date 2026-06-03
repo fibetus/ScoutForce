@@ -5,8 +5,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.s30331.ScoutForce.model.*;
 import pl.s30331.ScoutForce.model.enums.RecommendationType;
-import pl.s30331.ScoutForce.repository.PlayerRepository;
-import pl.s30331.ScoutForce.repository.ScoutRepository;
 import pl.s30331.ScoutForce.repository.ScoutingReportRepository;
 
 import java.time.LocalDate;
@@ -53,8 +51,8 @@ import java.util.stream.Collectors;
 public class ScoutingReportService {
 
     private final ScoutingReportRepository scoutingReportRepository;
-    private final ScoutRepository          scoutRepository;
-    private final PlayerRepository         playerRepository;
+    private final ScoutService             scoutService;
+    private final PlayerService            playerService;
     private final ViewPlayerMatchesService viewPlayerMatchesService;
 
     // ────────────────────────────────────────────────────────────────────────
@@ -88,8 +86,8 @@ public class ScoutingReportService {
         validateInput(note, recommendation, ratings);
 
         // 2. Fetch aggregates
-        Scout  scout  = getScout(scoutId);
-        Player player = getPlayer(playerId);
+        Scout  scout  = scoutService.getScout(scoutId);
+        Player player = playerService.getPlayer(playerId);
 
         // 3. Determine scope via association navigation – all observed matches
         //    of the player that the scout has actually watched
@@ -143,8 +141,8 @@ public class ScoutingReportService {
         }
 
         // 2. Fetch aggregates
-        Scout  scout  = getScout(scoutId);
-        Player player = getPlayer(playerId);
+        Scout  scout  = scoutService.getScout(scoutId);
+        Player player = playerService.getPlayer(playerId);
 
         // 3. Resolve selected matches – strict validation: every requested ID
         //    must be in scout.watchedMatches, otherwise reject the request.
@@ -200,32 +198,6 @@ public class ScoutingReportService {
         for (DetailedRating dr : ratings) {
             dr.validateRanges();
         }
-    }
-
-    /**
-     * Fetches a scout by ID.
-     *
-     * @param scoutId the identifier to look up
-     * @return the {@link Scout} entity
-     * @throws jakarta.persistence.EntityNotFoundException if not found
-     */
-    private Scout getScout(Long scoutId) {
-        return scoutRepository.findById(scoutId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Scout not found: " + scoutId));
-    }
-
-    /**
-     * Fetches a player by ID.
-     *
-     * @param playerId the identifier to look up
-     * @return the {@link Player} entity
-     * @throws jakarta.persistence.EntityNotFoundException if not found
-     */
-    private Player getPlayer(Long playerId) {
-        return playerRepository.findById(playerId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
-                        "Player not found: " + playerId));
     }
 
     /**
@@ -289,17 +261,6 @@ public class ScoutingReportService {
     public List<ScoutingReport> getReportsByScout(Long scoutId) {
         // TODO: implement when needed
         throw new UnsupportedOperationException("Not yet implemented.");
-    }
-
-    /**
-     * Retrieves all reports for a player by navigating the association.
-     *
-     * @param playerId ID of the player
-     * @return list of reports associated with the player
-     */
-    @Transactional(readOnly = true)
-    public List<ScoutingReport> getReportsByPlayer(Long playerId) {
-        return getPlayer(playerId).getScoutingReports();
     }
 
     /**

@@ -9,9 +9,8 @@ import pl.s30331.ScoutForce.controller.dto.MatchWithStatsDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerKpiDto;
 import pl.s30331.ScoutForce.model.*;
-import pl.s30331.ScoutForce.repository.PlayerRepository;
-import pl.s30331.ScoutForce.repository.ScoutRepository;
-import pl.s30331.ScoutForce.service.ScoutingReportService;
+import pl.s30331.ScoutForce.service.PlayerService;
+import pl.s30331.ScoutForce.service.ScoutService;
 import pl.s30331.ScoutForce.service.ViewPlayerMatchesService;
 import pl.s30331.ScoutForce.service.ViewPlayersListService;
 
@@ -40,9 +39,10 @@ import java.util.function.ToIntFunction;
 @CrossOrigin(origins = "*")
 public class PlayerController {
 
-    private final ViewPlayersListService    viewPlayersListService;
-    private final ViewPlayerMatchesService  viewPlayerMatchesService;
-    private final ScoutingReportService     scoutingReportService;
+    private final PlayerService            playerService;
+    private final ScoutService             scoutService;
+    private final ViewPlayersListService   viewPlayersListService;
+    private final ViewPlayerMatchesService viewPlayerMatchesService;
 
     /**
      * Returns the players the given scout has observed (those eligible for a new report).
@@ -57,7 +57,7 @@ public class PlayerController {
      */
     @GetMapping("/scouts/{scoutId}/players")
     public ResponseEntity<List<PlayerDto>> getObservablePlayers(@PathVariable Long scoutId) {
-        Scout scout = viewPlayersListService.getScout(scoutId);
+        Scout scout = scoutService.getScout(scoutId);
 
         List<PlayerDto> players = viewPlayersListService.getPlayersObservedByScout(scout).stream()
                 .map(player -> toPlayerDto(player, scout))
@@ -90,8 +90,8 @@ public class PlayerController {
             @PathVariable Long scoutId,
             @PathVariable Long playerId) {
 
-        Scout scout = viewPlayersListService.getScout(scoutId);
-        Player player = viewPlayersListService.getPlayer(playerId);
+        Scout scout = scoutService.getScout(scoutId);
+        Player player = playerService.getPlayer(playerId);
 
         List<Match> matches = viewPlayerMatchesService.getObservedMatchesForPlayer(player, scout);
 
@@ -109,7 +109,7 @@ public class PlayerController {
     /**
      * Returns a list of all players in the system, enriched with their global statistics.
      *
-     * <p>This endpoint loads all {@link Player} entities via {@link ViewPlayersListService#getAllPlayers()}
+     * <p>This endpoint loads all {@link Player} entities via {@link PlayerService#getAllPlayers()}
      * and maps them to {@link PlayerDto}s. Global statistics (KPIs) are computed across all matches
      * the player has participated in.</p>
      *
@@ -117,7 +117,7 @@ public class PlayerController {
      */
     @GetMapping("/players")
     public ResponseEntity<List<PlayerDto>> getPlayersWithStats() {
-        List<PlayerDto> players = viewPlayersListService.getAllPlayers().stream()
+        List<PlayerDto> players = playerService.getAllPlayers().stream()
                 .map(this::toPlayerDto)
                 .toList();
 
@@ -136,7 +136,7 @@ public class PlayerController {
      */
     @GetMapping("/players/{playerId}")
     public ResponseEntity<PlayerDto> getPlayerWithStats(@PathVariable Long playerId) {
-        PlayerDto player = toPlayerDto(viewPlayersListService.getPlayer(playerId));
+        PlayerDto player = toPlayerDto(playerService.getPlayer(playerId));
 
         return ResponseEntity.ok(player);
     }
@@ -154,7 +154,7 @@ public class PlayerController {
      */
     @GetMapping("/players/{playerId}/reports")
     public ResponseEntity<List<ScoutingReport>> getPlayerReports(@PathVariable Long playerId) {
-        List<ScoutingReport> reports = scoutingReportService.getReportsByPlayer(playerId);
+        List<ScoutingReport> reports = playerService.getScoutingReports(playerId);
 
         if (reports.isEmpty()) {
             return ResponseEntity.noContent().build();
