@@ -1,5 +1,6 @@
 package pl.s30331.ScoutForce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,23 +12,12 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Scouting Report created by a Scout for a specific Player.
- *
- * Business rules (enforced before persist in ScoutingReportService):
- *  1. detailedRatings must be non-empty (1..* constraint).
- *  2. Sum of weights of all DetailedRatings must equal exactly 1.0.
- *  3. All basedOnMatches must be in scout.watchedMatches ({subset} constraint).
- *
- * Derived attribute:
- *  /finalRating – weighted average of DetailedRating.rating × weight (not persisted).
- *
- * Associations:
- *  - ScoutingReport *──1 Scout           (createdBy)
- *  - ScoutingReport *──1 Player          (player)
- *  - ScoutingReport 1──* DetailedRating  (detailedRatings) – COMPOSITION
- *  - ScoutingReport *──* Match           (basedOnMatches)
  */
 @Entity
 @Table(name = "scouting_report")
@@ -50,32 +40,23 @@ public class ScoutingReport {
     @Column(nullable = false)
     private RecommendationType recommendation;
 
-    // ── Associations ──────────────────────────────────────────────────────────
-
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scout_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private Scout createdBy;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "player_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private Player player;
 
-    /**
-     * COMPOSITION – DetailedRating does not exist without this ScoutingReport.
-     * cascade ALL + orphanRemoval ensure child lifecycle is fully managed here.
-     */
     @OneToMany(mappedBy = "scoutingReport",
                cascade = CascadeType.ALL,
-               orphanRemoval = true)
+               orphanRemoval = true,
+               fetch = FetchType.LAZY)
     private List<DetailedRating> detailedRatings = new ArrayList<>();
 
-    /**
-     * Matches this report is based on.
-     * Must be a {subset} of createdBy.watchedMatches.
-     */
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "report_match",
             joinColumns = @JoinColumn(name = "report_id"),
@@ -83,12 +64,6 @@ public class ScoutingReport {
     )
     private List<Match> basedOnMatches = new ArrayList<>();
 
-    // ── Domain methods ────────────────────────────────────────────────────────
-
-    /**
-     * /finalRating – derived, not persisted.
-     * Weighted average: sum(rating_i × weight_i).
-     */
     @Transient
     public BigDecimal getFinalRating() {
         if (detailedRatings == null || detailedRatings.isEmpty()) return BigDecimal.ZERO;
@@ -98,12 +73,6 @@ public class ScoutingReport {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    /**
-     * Validates that the sum of all weights equals exactly 1.0.
-     * Called by ScoutingReportService before repository.save().
-     *
-     * @throws IllegalStateException if sum ≠ 1.0
-     */
     public void validateDetailedRatings() {
         if (detailedRatings == null || detailedRatings.isEmpty()) {
             throw new IllegalStateException("Report needs at least one Detailed Rating.");
@@ -117,17 +86,36 @@ public class ScoutingReport {
         }
     }
 
-    /**
-     * Validates the {subset} constraint: every match in basedOnMatches must
-     * appear in createdBy.watchedMatches.
-     * Called by ScoutingReportService before repository.save().
-     *
-     * @throws IllegalStateException if any match is not watched by the scout
-     */
     public void validateMatchesObservedByScout() {
+        if (createdBy == null) {
+            throw new IllegalStateException("Scouting report must have an authoring scout.");
+        }
         List<Match> watched = createdBy.getWatchedMatches();
         for (Match m : basedOnMatches) {
             if (!watched.contains(m)) {
+                throw new IllegalStateException(
+                        "Chosen player has no matches you've observed.");
+            }
+        }
+    }
+
+    /**
+     * Validates that every match in {@code basedOnMatches} has a {@link MatchStats}
+     * entry for this report's {@link #player}.
+     */
+    public void validateMatchesPlayedByPlayer() {
+        if (player == null) {
+            throw new IllegalStateException("Scouting report must refer to a player.");
+        }
+        Set<Long> playerMatchIds = player.getMatchStats().stream()
+                .map(MatchStats::getMatch)
+                .filter(Objects::nonNull)
+                .map(Match::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        for (Match m : basedOnMatches) {
+            if (m.getId() == null || !playerMatchIds.contains(m.getId())) {
                 throw new IllegalStateException(
                         "Chosen player has no matches you've observed.");
             }

@@ -1,5 +1,6 @@
 package pl.s30331.ScoutForce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,19 +9,12 @@ import lombok.Setter;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Match between two clubs.
  *
- * Constraint: host != guest (validated in constructor / service).
- *
- * Associations:
- *  - Match *──1 Club (host)
- *  - Match *──1 Club (guest)
- *  - Match 1──* MatchStats      (matchStats)
- *  - Match *──* Scout           (observedBy) – join table scout_watched_match
- *  - Match *──1 Delegation      (delegation)
- *  - Match *──* ScoutingReport  (basedOnReports) – inverse side
+ * Constraint: host != guest (validated before persist).
  */
 @Entity
 @Table(name = "match")
@@ -36,7 +30,6 @@ public class Match {
     @Column(nullable = false)
     private LocalDate date;
 
-    /** Venue / location */
     @Column(nullable = false)
     private String place;
 
@@ -46,48 +39,53 @@ public class Match {
     @Column(nullable = false)
     private Integer guestScore;
 
-    // ── Two-club constraint (host / guest) ────────────────────────────────────
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "host_club_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
+    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club host;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guest_club_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
+    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club guest;
 
-    // ── Statistics for individual players in this match ───────────────────────
-    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MatchStats> matchStats = new ArrayList<>();
 
-    // ── Scouts that observed this match ───────────────────────────────────────
-    @ManyToMany(mappedBy = "watchedMatches")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToMany(mappedBy = "watchedMatches", fetch = FetchType.LAZY)
     private List<Scout> observedBy = new ArrayList<>();
 
-    // ── Delegation that included this match ───────────────────────────────────
-    @ManyToOne
-    @JoinColumn(name = "delegation_id")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "delegation_id", nullable = false)
     private Delegation delegation;
 
-    // ── Scouting reports based (at least in part) on this match ──────────────
-    @ManyToMany(mappedBy = "basedOnMatches")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToMany(mappedBy = "basedOnMatches", fetch = FetchType.LAZY)
     private List<ScoutingReport> basedOnReports = new ArrayList<>();
 
     /**
      * Validates that host and guest are set and are different clubs.
-     * Called in service before persisting a Match.
      */
     public void validateBothTeams() {
         if (host == null || guest == null) {
             throw new IllegalArgumentException("Match must have both a host and a guest club.");
         }
-        if (host.getId() != null && host.getId().equals(guest.getId())) {
+        if (host == guest) {
             throw new IllegalArgumentException("Host and guest clubs must be different.");
         }
+        if (host.getId() != null && guest.getId() != null && host.getId().equals(guest.getId())) {
+            throw new IllegalArgumentException("Host and guest clubs must be different.");
+        }
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Match other)) return false;
+        return id != null && Objects.equals(id, other.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

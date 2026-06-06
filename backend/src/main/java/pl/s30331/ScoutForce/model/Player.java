@@ -1,6 +1,8 @@
 package pl.s30331.ScoutForce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -14,36 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Player entity.
- *
- *
- * Dynamic inheritance (University / Professional experience) is modelled
- * using the Strategy pattern: Player "has assigned" exactly one
- * PlayerExperience implementation at a time (UniversityExperience or
- * ProfessionalExperience). The two @OneToOne fields map each concrete
- * type; only one is non-null at any given moment.
- *
- * Domain constructor (from class diagram):
- *   Player(position, status, weight, height, wingspan, initialExperience)
- *
- * Derived attribute:
- *   /averageRating – calculated on-the-fly from scoutingReports, NOT persisted.
- *
- * Associations:
- *   - Player 1 ──* MatchStats        (matchStats)
- *   - Player 1 ──* ScoutingReport    (scoutingReports)
- *   - Player 1 ──* ShootingAnalysis  (shootingAnalyses)
- *   - Player *──1 Club               (club)
+ * Player entity with dynamic University / Professional experience (Strategy pattern).
  */
 @Entity
 @Table(name = "player")
 @PrimaryKeyJoinColumn(name = "person_id")
 @Getter
 @Setter
-@NoArgsConstructor  // required by JPA
+@NoArgsConstructor
 public class Player extends Person {
-
-    // ── Attributes from class diagram ─────────────────────────────────────────
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -62,65 +43,45 @@ public class Player extends Person {
     @Column(nullable = false)
     private Double wingspan;
 
-    // ── Dynamic inheritance via Strategy (PlayerExperience interface) ─────────
-    // At most one of these is non-null at a time.
-    @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Setter(AccessLevel.NONE)
     private UniversityExperience universityExperience;
 
-    @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Setter(AccessLevel.NONE)
     private ProfessionalExperience professionalExperience;
 
-    // ── Associations ──────────────────────────────────────────────────────────
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "club_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
+    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club club;
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MatchStats> matchStats = new ArrayList<>();
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ScoutingReport> scoutingReports = new ArrayList<>();
 
-    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<ShootingAnalysis> shootingAnalyses = new ArrayList<>();
 
-    // ── Domain constructor (from class diagram) ───────────────────────────────
+    @ManyToMany(mappedBy = "observedPlayers", fetch = FetchType.LAZY)
+    private List<Scout> observingScouts = new ArrayList<>();
 
-    /**
-     * Creates a Player with a given initial experience type.
-     *
-     * @param position          playing position
-     * @param status            initial scouting status
-     * @param weight            weight in kg
-     * @param height            height in cm
-     * @param wingspan          wingspan in cm
-     * @param initialExperience either a new UniversityExperience or ProfessionalExperience
-     */
     public Player(PositionType position,
                   PlayerStatus status,
                   Double weight,
                   Double height,
                   Double wingspan,
                   PlayerExperience initialExperience) {
-        this.position      = position;
-        this.playerStatus  = status;
-        this.weight        = weight;
-        this.height        = height;
-        this.wingspan      = wingspan;
+        this.position     = position;
+        this.playerStatus = status;
+        this.weight       = weight;
+        this.height       = height;
+        this.wingspan     = wingspan;
         assignExperience(initialExperience);
     }
 
-    // ── Domain methods ────────────────────────────────────────────────────────
-
-    /**
-     * Switches the player to University experience (dynamic inheritance).
-     * Creates a new UniversityExperience using its domain constructor and
-     * removes any existing ProfessionalExperience (orphanRemoval handles DB).
-     */
     public void becomeUniversityPlayer(String university, ClassType classType) {
         this.professionalExperience = null;
         UniversityExperience exp = new UniversityExperience(university, classType);
@@ -128,11 +89,6 @@ public class Player extends Person {
         this.universityExperience = exp;
     }
 
-    /**
-     * Switches the player to Professional experience (dynamic inheritance).
-     * Creates a new ProfessionalExperience using its domain constructor and
-     * removes any existing UniversityExperience (orphanRemoval handles DB).
-     */
     public void becomeProfessionalPlayer(String countryOfOrigin) {
         this.universityExperience = null;
         ProfessionalExperience exp = new ProfessionalExperience(countryOfOrigin);
@@ -140,15 +96,10 @@ public class Player extends Person {
         this.professionalExperience = exp;
     }
 
-    /** Updates the player's scouting status. */
     public void changeStatus(PlayerStatus newStatus) {
         this.playerStatus = newStatus;
     }
 
-    /**
-     * Returns the currently active PlayerExperience, or null if none is set.
-     * Convenience method – the caller can use getExperienceType() on the result.
-     */
     @Transient
     public PlayerExperience getExperience() {
         if (universityExperience != null)   return universityExperience;
@@ -156,10 +107,6 @@ public class Player extends Person {
         return null;
     }
 
-    /**
-     * /averageRating – derived attribute (not persisted).
-     * Average finalRating across all scouting reports; returns 0 if none.
-     */
     @Transient
     public BigDecimal getAverageRating() {
         if (scoutingReports == null || scoutingReports.isEmpty()) {
@@ -172,12 +119,15 @@ public class Player extends Person {
                 2, RoundingMode.HALF_UP);
     }
 
-    // ── Private helpers ───────────────────────────────────────────────────────
+    @PrePersist
+    @PreUpdate
+    private void validateSingleExperience() {
+        if (universityExperience != null && professionalExperience != null) {
+            throw new IllegalStateException(
+                    "Player cannot have both University and Professional experience.");
+        }
+    }
 
-    /**
-     * Sets the correct @OneToOne field based on the runtime type of the
-     * provided PlayerExperience implementation.
-     */
     private void assignExperience(PlayerExperience experience) {
         if (experience instanceof UniversityExperience ue) {
             ue.setPlayer(this);
