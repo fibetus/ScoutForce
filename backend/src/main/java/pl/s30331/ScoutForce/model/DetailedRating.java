@@ -38,7 +38,6 @@ public class DetailedRating {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scouting_report_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private ScoutingReport scoutingReport;
 
     public void validateRanges() {

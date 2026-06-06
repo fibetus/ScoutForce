@@ -1,6 +1,5 @@
 package pl.s30331.ScoutForce.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -31,7 +30,6 @@ public class Scout extends ClubEmployee {
     private String observationRegion;
 
     @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
     private List<ScoutingReport> createdReports = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -40,7 +38,6 @@ public class Scout extends ClubEmployee {
             joinColumns = @JoinColumn(name = "scout_id"),
             inverseJoinColumns = @JoinColumn(name = "match_id")
     )
-    @JsonIgnore
     private List<Match> watchedMatches = new ArrayList<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -49,10 +46,8 @@ public class Scout extends ClubEmployee {
             joinColumns = @JoinColumn(name = "scout_id"),
             inverseJoinColumns = @JoinColumn(name = "player_id")
     )
-    @JsonIgnore
     private List<Player> observedPlayers = new ArrayList<>();
 
     @OneToMany(mappedBy = "scout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    @JsonIgnore
     private List<Delegation> delegations = new ArrayList<>();
 }

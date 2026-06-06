@@ -1,6 +1,5 @@
 package pl.s30331.ScoutForce.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -42,12 +41,10 @@ public class ScoutingReport {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scout_id", nullable = false)
-    @JsonIgnore
     private Scout createdBy;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "player_id", nullable = false)
-    @JsonIgnore
     private Player player;
 
     @OneToMany(mappedBy = "scoutingReport",
@@ -99,10 +96,6 @@ public class ScoutingReport {
         }
     }
 
-    /**
-     * Validates that every match in {@code basedOnMatches} has a {@link MatchStats}
-     * entry for this report's {@link #player}.
-     */
     public void validateMatchesPlayedByPlayer() {
         if (player == null) {
             throw new IllegalStateException("Scouting report must refer to a player.");

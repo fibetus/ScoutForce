@@ -1,6 +1,5 @@
 package pl.s30331.ScoutForce.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,12 +40,10 @@ public class Match {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "host_club_id", nullable = false)
-    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club host;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guest_club_id", nullable = false)
-    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club guest;
 
     @OneToMany(mappedBy = "match", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
@@ -62,9 +59,6 @@ public class Match {
     @ManyToMany(mappedBy = "basedOnMatches", fetch = FetchType.LAZY)
     private List<ScoutingReport> basedOnReports = new ArrayList<>();
 
-    /**
-     * Validates that host and guest are set and are different clubs.
-     */
     public void validateBothTeams() {
         if (host == null || guest == null) {
             throw new IllegalArgumentException("Match must have both a host and a guest club.");

@@ -8,6 +8,8 @@ import pl.s30331.ScoutForce.controller.dto.MatchStatsDto;
 import pl.s30331.ScoutForce.controller.dto.MatchWithStatsDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerDto;
 import pl.s30331.ScoutForce.controller.dto.PlayerKpiDto;
+import pl.s30331.ScoutForce.controller.dto.ScoutingReportDto;
+import pl.s30331.ScoutForce.controller.dto.ScoutingReportDtoMapper;
 import pl.s30331.ScoutForce.model.*;
 import pl.s30331.ScoutForce.service.PlayerService;
 import pl.s30331.ScoutForce.service.ScoutService;
@@ -149,12 +151,13 @@ public class PlayerController {
      *
      * @param playerId the identifier of the player whose reports are requested
      * @return {@code 204 No Content} when the player has no reports, otherwise
-     *         {@code 200 OK} with the list of {@link ScoutingReport}s
+     *         {@code 200 OK} with the list of {@link ScoutingReportDto}s
      * @throws jakarta.persistence.EntityNotFoundException if no player exists for the given id (mapped to {@code 404})
      */
     @GetMapping("/players/{playerId}/reports")
-    public ResponseEntity<List<ScoutingReport>> getPlayerReports(@PathVariable Long playerId) {
-        List<ScoutingReport> reports = playerService.getScoutingReports(playerId);
+    public ResponseEntity<List<ScoutingReportDto>> getPlayerReports(@PathVariable Long playerId) {
+        List<ScoutingReportDto> reports = ScoutingReportDtoMapper.toDtoList(
+                playerService.getScoutingReports(playerId));
 
         if (reports.isEmpty()) {
             return ResponseEntity.noContent().build();

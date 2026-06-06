@@ -1,6 +1,5 @@
 package pl.s30331.ScoutForce.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -53,7 +52,6 @@ public class Player extends Person {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "club_id", nullable = false)
-    @JsonIgnoreProperties({"players", "employees", "homeMatches", "awayMatches"})
     private Club club;
 
     @OneToMany(mappedBy = "player", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
