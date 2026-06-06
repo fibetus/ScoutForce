@@ -9,6 +9,7 @@ import pl.s30331.ScoutForce.repository.ScoutingReportRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -88,7 +89,7 @@ public class ScoutingReportService {
 
         validateInput(note, recommendation, ratings);
         if (selectedMatchIds == null || selectedMatchIds.isEmpty()) {
-            throw new IllegalStateException("Chosen player has no matches you've observed.");
+            throw new IllegalStateException("At least one match must be selected for the report.");
         }
 
         Scout  scout  = scoutService.getScout(scoutId);
@@ -98,6 +99,7 @@ public class ScoutingReportService {
                 .getObservedMatchesForPlayer(player, scout);
         Set<Long> playerObservedIds = playerObserved.stream()
                 .map(Match::getId)
+                .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
 
         List<Long> invalid = selectedMatchIds.stream()
@@ -105,15 +107,17 @@ public class ScoutingReportService {
                 .toList();
 
         if (!invalid.isEmpty()) {
-            throw new IllegalStateException("Chosen player has no matches you've observed.");
+            throw new IllegalStateException(
+                    "One or more selected matches are not among the matches you have observed for this player.");
         }
 
         List<Match> selectedMatches = playerObserved.stream()
-                .filter(m -> selectedMatchIds.contains(m.getId()))
+                .filter(m -> m.getId() != null && selectedMatchIds.contains(m.getId()))
                 .toList();
 
         if (selectedMatches.isEmpty()) {
-            throw new IllegalStateException("Chosen player has no matches you've observed.");
+            throw new IllegalStateException(
+                    "One or more selected matches are not among the matches you have observed for this player.");
         }
 
         ScoutingReport report = buildReport(scout, player, selectedMatches,
