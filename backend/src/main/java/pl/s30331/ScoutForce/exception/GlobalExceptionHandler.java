@@ -31,11 +31,6 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
-    @ExceptionHandler(UnsupportedOperationException.class)
-    public ResponseEntity<Map<String, Object>> handleNotImplemented(UnsupportedOperationException ex) {
-        return error(HttpStatus.NOT_IMPLEMENTED, "This endpoint is not yet implemented.");
-    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         return error(HttpStatus.INTERNAL_SERVER_ERROR, "An unexpected error occurred.");
