@@ -9,7 +9,5 @@ import java.util.Optional;
 @Repository
 public interface ScoutRepository extends JpaRepository<Scout, Long> {
 
-    Optional<Scout> findByEmail(String email);
-
     Optional<Scout> findByLicenseNumber(String licenseNumber);
 }
