@@ -2,13 +2,14 @@ package pl.s30331.ScoutForce.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pl.s30331.ScoutForce.model.Match;
 import pl.s30331.ScoutForce.model.MatchStats;
 import pl.s30331.ScoutForce.model.Player;
 import pl.s30331.ScoutForce.model.Scout;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +23,6 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class ViewPlayerMatchesService {
 
     /**
@@ -43,12 +43,15 @@ public class ViewPlayerMatchesService {
      * @return the intersection of matches as a list
      */
     public List<Match> getObservedMatchesForPlayer(Player player, Scout scout) {
-        List<Match> playerMatches = player.getMatchStats().stream()
+        Set<Long> playerMatchIds = player.getMatchStats().stream()
                 .map(MatchStats::getMatch)
-                .toList();
+                .filter(Objects::nonNull)
+                .map(Match::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
         return scout.getWatchedMatches().stream()
-                .filter(playerMatches::contains)
+                .filter(m -> m.getId() != null && playerMatchIds.contains(m.getId()))
                 .toList();
     }
 

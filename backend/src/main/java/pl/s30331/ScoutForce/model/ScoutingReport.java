@@ -87,9 +87,13 @@ public class ScoutingReport {
         if (createdBy == null) {
             throw new IllegalStateException("Scouting report must have an authoring scout.");
         }
-        List<Match> watched = createdBy.getWatchedMatches();
+        Set<Long> watchedMatchIds = createdBy.getWatchedMatches().stream()
+                .map(Match::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
         for (Match m : basedOnMatches) {
-            if (!watched.contains(m)) {
+            if (m.getId() == null || !watchedMatchIds.contains(m.getId())) {
                 throw new IllegalStateException(
                         "Chosen player has no matches you've observed.");
             }
