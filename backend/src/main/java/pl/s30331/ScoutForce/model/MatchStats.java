@@ -8,17 +8,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
-/**
- * Association class between Player and Match.
- * Represents a single player's performance in a single match.
- *
- * Derived attributes (not persisted):
- *  /fieldGoalPercentage, /threePointPercentage, /freeThrowPercentage
- *
- * Associations:
- *  - MatchStats *──1 Player
- *  - MatchStats *──1 Match
- */
 @Entity
 @Table(name = "match_stats",
         uniqueConstraints = @UniqueConstraint(columnNames = {"player_id", "match_id"}))
@@ -31,17 +20,14 @@ public class MatchStats {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "player_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Player player;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "match_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Match match;
 
-    // ── Box-score statistics ──────────────────────────────────────────────────
     @Column(nullable = false)
     private Integer minutesPlayed;
 
@@ -66,7 +52,6 @@ public class MatchStats {
     @Column(nullable = false)
     private Integer fouls;
 
-    // ── Shooting (used for derived percentages) ───────────────────────────────
     @Column(nullable = false)
     private Integer fieldGoalsMade;
 
@@ -84,8 +69,6 @@ public class MatchStats {
 
     @Column(nullable = false)
     private Integer freeThrowsAttempted;
-
-    // ── Derived attributes ────────────────────────────────────────────────────
 
     @Transient
     public BigDecimal getFieldGoalPercentage() {

@@ -42,7 +42,6 @@ public abstract class Person {
     @Column(nullable = false)
     private LocalDate birthDate;
 
-    /** {unique} constraint from the class diagram – every person has a unique contact email. */
     @Column(unique = true, nullable = false)
     private String email;
 }

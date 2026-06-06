@@ -8,13 +8,6 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Director - sports director of a club.
- *
- *
- * Associations:
- *  - Director 1 ──* Delegation (createdDelegations)
- */
 @Entity
 @Table(name = "director")
 @PrimaryKeyJoinColumn(name = "person_id")
@@ -23,8 +16,6 @@ import java.util.List;
 @NoArgsConstructor
 public class Director extends ClubEmployee {
 
-    /** Delegations created (issued) by this director. */
-    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Delegation> createdDelegations = new ArrayList<>();
 }

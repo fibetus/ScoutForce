@@ -8,18 +8,6 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
-/**
- * Abstract club employee – concrete subclasses are {@link Scout} and {@link Director}.
- *
- *
- *
- * Attributes:
- *  – hireDate
- *  – dailyRate (daily pay rate)
- *
- * Associations:
- *  – ClubEmployee *──1 Club (employer)
- */
 @Entity
 @Table(name = "club_employee")
 @PrimaryKeyJoinColumn(name = "person_id")
@@ -34,8 +22,7 @@ public abstract class ClubEmployee extends Person {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal dailyRate;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "club_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Club employer;
 }

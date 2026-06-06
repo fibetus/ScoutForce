@@ -8,16 +8,6 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Club (basketball team / organisation).
- *
- *
- * Associations:
- *  - Club 1 ──* Player        (players)
- *  - Club 1 ──* ClubEmployee  (employees) – Scouts and Directors
- *  - Club 1 ──* Match         (homeMatches – as host)
- *  - Club 1 ──* Match         (awayMatches – as guest)
- */
 @Entity
 @Table(name = "club")
 @Getter
@@ -41,25 +31,19 @@ public class Club {
     @Column(nullable = false)
     private String country;
 
-    /** Optional – populated only for NBA clubs. */
     private String conference;
 
-    /** Optional – populated only for NBA clubs. */
     private String division;
 
-    @OneToMany(mappedBy = "club")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "club", fetch = FetchType.LAZY)
     private List<Player> players = new ArrayList<>();
 
-    @OneToMany(mappedBy = "employer")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "employer", fetch = FetchType.LAZY)
     private List<ClubEmployee> employees = new ArrayList<>();
 
-    @OneToMany(mappedBy = "host")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "host", fetch = FetchType.LAZY)
     private List<Match> homeMatches = new ArrayList<>();
 
-    @OneToMany(mappedBy = "guest")
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "guest", fetch = FetchType.LAZY)
     private List<Match> awayMatches = new ArrayList<>();
 }

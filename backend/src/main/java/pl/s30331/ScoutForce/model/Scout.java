@@ -1,5 +1,6 @@
 package pl.s30331.ScoutForce.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -11,12 +12,6 @@ import java.util.List;
 /**
  * Scout – a field employee who observes players at matches
  * and creates scouting reports.
- *
- *
- * Associations:
- *  - Scout 1 ──* ScoutingReport   (createdReports)
- *  - Scout *──* Match             (watchedMatches) – via Delegation
- *  - Scout 1 ──* Delegation       (delegations)
  */
 @Entity
 @Table(name = "scout")
@@ -26,7 +21,6 @@ import java.util.List;
 @NoArgsConstructor
 public class Scout extends ClubEmployee {
 
-    /** {unique} license number */
     @Column(unique = true, nullable = false)
     private String licenseNumber;
 
@@ -36,26 +30,29 @@ public class Scout extends ClubEmployee {
     @Column(nullable = false)
     private String observationRegion;
 
-    /** Reports authored by this scout */
-    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "createdBy", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<ScoutingReport> createdReports = new ArrayList<>();
 
-    /**
-     * Matches this scout has observed (across all delegations).
-     * The join table is owned by the Delegation → Match side;
-     * here we navigate through delegations in the service layer.
-     */
-    @ManyToMany
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "scout_watched_match",
             joinColumns = @JoinColumn(name = "scout_id"),
             inverseJoinColumns = @JoinColumn(name = "match_id")
     )
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @JsonIgnore
     private List<Match> watchedMatches = new ArrayList<>();
 
-    @OneToMany(mappedBy = "scout", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "scout_observed_player",
+            joinColumns = @JoinColumn(name = "scout_id"),
+            inverseJoinColumns = @JoinColumn(name = "player_id")
+    )
+    @JsonIgnore
+    private List<Player> observedPlayers = new ArrayList<>();
+
+    @OneToMany(mappedBy = "scout", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Delegation> delegations = new ArrayList<>();
 }

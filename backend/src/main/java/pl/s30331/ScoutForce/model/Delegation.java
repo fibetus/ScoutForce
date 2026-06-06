@@ -11,22 +11,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Delegation – a scouting trip assigned to a Scout that includes one or more Matches.
- *
- *
- * Class-level (static) attributes:
- *  DAILY_LIVING_COST = 250$/day
- *  FLIGHT_COST       = 1500$
- *
- * Derived attribute:
- *  /cost – calculated on-the-fly from trip duration and constants (not persisted).
- *
- * Associations:
- *  - Delegation *──1 Scout    (scout)
- *  - Delegation *──1 Director (createdBy)
- *  - Delegation 1──* Match    (matches)
- */
 @Entity
 @Table(name = "delegation")
 @Getter
@@ -34,7 +18,6 @@ import java.util.List;
 @NoArgsConstructor
 public class Delegation {
 
-    // ── Class-level constants ─────────────────────────────────────────────────
     private static final BigDecimal DAILY_LIVING_COST = BigDecimal.valueOf(250);
     private static final BigDecimal FLIGHT_COST       = BigDecimal.valueOf(1500);
 
@@ -58,28 +41,17 @@ public class Delegation {
     @Column(nullable = false)
     private DelegationStatus status = DelegationStatus.PLANNED;
 
-    // ── Associations ──────────────────────────────────────────────────────────
-
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scout_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Scout scout;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "director_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
     private Director createdBy;
 
-    @OneToMany(mappedBy = "delegation", cascade = CascadeType.ALL)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @OneToMany(mappedBy = "delegation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Match> matches = new ArrayList<>();
 
-    // ── Derived attribute ─────────────────────────────────────────────────────
-
-    /**
-     * /cost – not persisted.
-     * Formula: FLIGHT_COST * 2 + DAILY_LIVING_COST * durationDays.
-     */
     @Transient
     public BigDecimal getCost() {
         if (startDate == null || endDate == null) return BigDecimal.ZERO;

@@ -11,18 +11,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 
-/**
- * Detailed Rating – a single category score within a Scouting Report.
- *
- * COMPOSITION: does not exist without the owning ScoutingReport.
- * Constraints:
- *  - rating  ∈ [1, 10]
- *  - weight  ∈ [0.0, 1.0]
- *  - comment must not be blank
- *
- * Associations:
- *  - DetailedRating *──1 ScoutingReport (scoutingReport)
- */
 @Entity
 @Table(name = "detailed_rating")
 @Getter
@@ -34,7 +22,6 @@ public class DetailedRating {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Free-text category, e.g. "offense", "defense", "athleticism" */
     @Column(nullable = false)
     private String type;
 
@@ -49,23 +36,11 @@ public class DetailedRating {
     @Column(nullable = false, precision = 5, scale = 4)
     private BigDecimal weight;
 
-    @ManyToOne(optional = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scouting_report_id", nullable = false)
     @com.fasterxml.jackson.annotation.JsonIgnore
     private ScoutingReport scoutingReport;
 
-    // ── Domain methods ────────────────────────────────────────────────────────
-
-    /**
-     * Validates the input ranges of this Detailed Rating (use case exception E4).
-     * Called by the service BEFORE building the aggregate, so we fail fast
-     * without touching the database.
-     *
-     * @throws IllegalStateException if any of:
-     *   – {@code type} or {@code comment} is blank,
-     *   – {@code rating} is null or outside [1, 10],
-     *   – {@code weight} is null or outside [0.0, 1.0].
-     */
     public void validateRanges() {
         if (type == null || type.isBlank() || comment == null || comment.isBlank()) {
             throw new IllegalStateException(
