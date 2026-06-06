@@ -9,12 +9,7 @@ export const API_BASE_URL: string =
   import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080";
 
 /**
- * Identifier of the scout whose data is shown by the application.
- *
- * Authentication is intentionally out of scope at this stage, so the app operates
- * as a single fixed test scout (id `2` from `DataInitializer`). Sourced from the
- * `VITE_SCOUT_ID` environment variable, defaulting to `2` when not provided.
+ * License number of the demo scout seeded in the backend (`DataInitializer`).
+ * The runtime scout id is resolved via `GET /api/scouts/default` on app startup.
  */
-export const CURRENT_SCOUT_ID: number = Number(
-  import.meta.env.VITE_SCOUT_ID ?? 2,
-);
+export const DEFAULT_SCOUT_LICENSE = "SCT-001";

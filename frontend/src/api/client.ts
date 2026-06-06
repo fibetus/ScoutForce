@@ -62,6 +62,15 @@ export class ApiClient {
   constructor(private readonly baseUrl: string = API_BASE_URL) {}
 
   /**
+   * Resolves the demo scout by license number (`GET /api/scouts/default`).
+   */
+  async getDefaultScout(): Promise<{ id: number; licenseNumber: string }> {
+    return this.request<{ id: number; licenseNumber: string }>(
+      "/api/scouts/default",
+    );
+  }
+
+  /**
    * Fetches the players observed by the given scout.
    *
    * Calls `GET /api/scouts/{scoutId}/players` and maps each `PlayerDto` to a

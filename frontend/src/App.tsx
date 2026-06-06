@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 
 import { apiClient } from "./api/client";
-import { CURRENT_SCOUT_ID } from "./api/config";
 import {
   ApiError,
   mapErrorToUi,
@@ -112,16 +111,16 @@ export default function App() {
   const [reportResult, setReportResult] = useState<UiReportResult | null>(null);
 
   // --- UI / async state -------------------------------------------------------
-  const [loadingPlayers, setLoadingPlayers] = useState(true);
+  const [scoutId, setScoutId] = useState<number | null>(null);
   const [loadError, setLoadError] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showE1Error, setShowE1Error] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [toast, setToast] = useState<ToastState | null>(null);
 
   /**
-   * Loads the observed players for {@link CURRENT_SCOUT_ID} once on mount.
-   * Failures are mapped to a user-facing message shown in the players pane.
+   * Resolves the demo scout and loads observed players on mount.
    */
   useEffect(() => {
     let cancelled = false;
@@ -129,7 +128,12 @@ export default function App() {
       setLoadingPlayers(true);
       setLoadError([]);
       try {
-        const result = await apiClient.getObservablePlayers(CURRENT_SCOUT_ID);
+        const scout = await apiClient.getDefaultScout();
+        if (cancelled) {
+          return;
+        }
+        setScoutId(scout.id);
+        const result = await apiClient.getObservablePlayers(scout.id);
         if (!cancelled) {
           setPlayers(result);
         }
@@ -180,13 +184,13 @@ export default function App() {
    * matches view renders as its empty state.
    */
   const handleViewMatches = async () => {
-    if (selectedPlayer === null) {
+    if (selectedPlayer === null || scoutId === null) {
       return;
     }
     setShowE1Error(false);
     try {
       const matches = await apiClient.getPlayerMatches(
-        CURRENT_SCOUT_ID,
+        scoutId,
         selectedPlayer.id,
       );
       setPlayerMatches(matches);
@@ -207,13 +211,13 @@ export default function App() {
    * flow (all observed matches, averages panel visible).
    */
   const handleCreateReport = async () => {
-    if (selectedPlayer === null) {
+    if (selectedPlayer === null || scoutId === null) {
       return;
     }
     setShowE1Error(false);
     try {
       const matches = await apiClient.getPlayerMatches(
-        CURRENT_SCOUT_ID,
+        scoutId,
         selectedPlayer.id,
       );
       if (matches.length === 0) {
@@ -270,7 +274,7 @@ export default function App() {
    * @param formData - The validated form data emitted by {@link CreateReportView}.
    */
   const handleSubmitReport = async (formData: CreateReportFormData) => {
-    if (selectedPlayer === null || submitting) {
+    if (selectedPlayer === null || scoutId === null || submitting) {
       return;
     }
     setSubmitting(true);
@@ -283,12 +287,12 @@ export default function App() {
 
       const result = matchSubsetSelected
         ? await apiClient.createReportFromMatches(
-            CURRENT_SCOUT_ID,
+            scoutId,
             selectedPlayer.id,
             { ...basePayload, matchIds: selectedMatches },
           )
         : await apiClient.createReport(
-            CURRENT_SCOUT_ID,
+            scoutId,
             selectedPlayer.id,
             basePayload,
           );
