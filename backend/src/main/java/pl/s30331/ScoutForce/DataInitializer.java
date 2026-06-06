@@ -33,6 +33,11 @@ public class DataInitializer implements CommandLineRunner {
     private final ScoutRepository scoutRepository;
     private final EntityManager entityManager;
 
+    /**
+     * Populates the database when no scouts exist yet.
+     *
+     * @param args unused Spring Boot command-line arguments
+     */
     @Override
     @Transactional
     public void run(String... args) {
@@ -66,6 +71,8 @@ public class DataInitializer implements CommandLineRunner {
         defaultScout.setLicenseNumber("SCT-001");
         defaultScout.setSpecialization("Guards");
         defaultScout.setObservationRegion("NCAA West");
+        defaultScout.setSentByDirector(director);
+        director.getSentScouts().add(defaultScout);
         entityManager.persist(defaultScout);
 
         Scout otherScout = new Scout();
@@ -79,6 +86,8 @@ public class DataInitializer implements CommandLineRunner {
         otherScout.setLicenseNumber("SCT-002");
         otherScout.setSpecialization("Forwards");
         otherScout.setObservationRegion("EuroLeague");
+        otherScout.setSentByDirector(director);
+        director.getSentScouts().add(otherScout);
         entityManager.persist(otherScout);
         entityManager.flush();
 
@@ -177,6 +186,11 @@ public class DataInitializer implements CommandLineRunner {
         entityManager.flush();
     }
 
+    /**
+     * Creates and persists a {@link Club}.
+     *
+     * @return the managed club instance
+     */
     private Club persistClub(String name, String league, String city, String country,
                              String conference, String division) {
         Club c = new Club();
@@ -190,6 +204,9 @@ public class DataInitializer implements CommandLineRunner {
         return c;
     }
 
+    /**
+     * Builds a transient {@link Player} with identity fields; experience is set separately.
+     */
     private Player createPlayer(String firstName, String lastName, String email,
                                 LocalDate birthDate, PositionType position,
                                 PlayerStatus status, Double weight, Double height,
@@ -208,6 +225,9 @@ public class DataInitializer implements CommandLineRunner {
         return p;
     }
 
+    /**
+     * Creates a {@link Delegation} and wires both sides of director/scout associations.
+     */
     private Delegation persistDelegation(String name, Scout scout, Director director,
                                          LocalDate start, LocalDate end, String destination) {
         Delegation d = new Delegation();
@@ -218,10 +238,15 @@ public class DataInitializer implements CommandLineRunner {
         d.setEndDate(end);
         d.setDestination(destination);
         d.setStatus(DelegationStatus.FINISHED);
+        director.getCreatedDelegations().add(d);
+        scout.getDelegations().add(d);
         entityManager.persist(d);
         return d;
     }
 
+    /**
+     * Persists a {@link Match} after {@link Match#validateBothTeams()}.
+     */
     private Match persistMatch(LocalDate date, String place, Club host, Club guest,
                                int hostScore, int guestScore, Delegation delegation) {
         Match m = new Match();
@@ -237,6 +262,9 @@ public class DataInitializer implements CommandLineRunner {
         return m;
     }
 
+    /**
+     * Builds a {@link MatchStats} row linking a player to a match (not yet persisted).
+     */
     private MatchStats createMatchStats(Player player, Match match,
                                         int minutes, int points, int rebounds, int assists,
                                         int steals, int blocks, int turnovers, int fouls,
@@ -262,11 +290,15 @@ public class DataInitializer implements CommandLineRunner {
         return ms;
     }
 
+    /**
+     * Maintains both sides of the scout ↔ player {@code observedPlayers} association.
+     */
     private void observePlayer(Scout scout, Player player) {
         scout.getObservedPlayers().add(player);
         player.getObservingScouts().add(scout);
     }
 
+    /** Factory for a single {@link DetailedRating} with decimal weight. */
     private DetailedRating rating(String type, String comment, int score, String weight) {
         DetailedRating dr = new DetailedRating();
         dr.setType(type);
@@ -276,6 +308,10 @@ public class DataInitializer implements CommandLineRunner {
         return dr;
     }
 
+    /**
+     * Persists a sample {@link ScoutingReport} without running service-layer validation
+     * (seed data is known to satisfy all invariants).
+     */
     private void seedReport(Scout scout, Player player, List<Match> matches,
                             String note, RecommendationType recommendation,
                             List<DetailedRating> ratings) {

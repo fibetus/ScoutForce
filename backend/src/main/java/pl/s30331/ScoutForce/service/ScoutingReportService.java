@@ -13,10 +13,10 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Primary use case: Create Scouting Report.
+ * Primary use case: <strong>Create Scouting Report</strong>.
  *
  * <p>Includes {@code View Players List} and {@code Add Detailed Ratings};
- * extends {@code View Player's Matches} (flow A1).</p>
+ * extends {@code View Player's Matches} (alternative flow A1 with a match subset).</p>
  */
 @Service
 @RequiredArgsConstructor
@@ -29,7 +29,15 @@ public class ScoutingReportService {
     private final ViewPlayerMatchesService viewPlayerMatchesService;
 
     /**
-     * Creates and persists a new Scouting Report (default flow – all observed matches).
+     * Creates a report based on <em>all</em> matches observed by the scout in which the player appeared.
+     *
+     * @param scoutId        authoring scout
+     * @param playerId       subject player
+     * @param note           free-text evaluation (required)
+     * @param recommendation buy/hold/pass recommendation
+     * @param ratings        at least one weighted {@link DetailedRating}
+     * @return persisted report after domain validation
+     * @throws IllegalStateException E1 when the player has no observed matches in common with the scout
      */
     @Transactional(rollbackFor = Exception.class)
     public ScoutingReport createScoutingReport(Long scoutId,
@@ -55,7 +63,19 @@ public class ScoutingReportService {
     }
 
     /**
-     * Creates a Scouting Report scoped to a specific subset of matches (flow A1).
+     * Creates a report scoped to an explicit subset of match ids (flow A1).
+     *
+     * <p>Each selected id must belong to the intersection of the scout's watched matches
+     * and the player's {@link MatchStats} entries.</p>
+     *
+     * @param scoutId           authoring scout
+     * @param playerId          subject player
+     * @param selectedMatchIds  non-empty list of match primary keys
+     * @param note              free-text evaluation
+     * @param recommendation    buy/hold/pass recommendation
+     * @param ratings           weighted detailed ratings
+     * @return persisted report
+     * @throws IllegalStateException when any selected match is outside the allowed intersection
      */
     @Transactional(rollbackFor = Exception.class)
     public ScoutingReport createScoutingReportFromSelectedMatches(
@@ -101,6 +121,14 @@ public class ScoutingReportService {
         return persistValidated(report);
     }
 
+    /**
+     * Validates request-level fields shared by both create flows.
+     *
+     * @param note           must be non-blank
+     * @param recommendation must be present
+     * @param ratings        must contain at least one entry with valid ranges
+     * @throws IllegalStateException when any check fails
+     */
     private void validateInput(String note,
                                RecommendationType recommendation,
                                List<DetailedRating> ratings) {
@@ -115,6 +143,17 @@ public class ScoutingReportService {
         }
     }
 
+    /**
+     * Assembles an unsaved {@link ScoutingReport} graph in memory.
+     *
+     * @param scout           authoring scout
+     * @param player          subject player
+     * @param basedOnMatches  matches that ground the evaluation
+     * @param note            report text
+     * @param recommendation  recommendation enum
+     * @param ratings         detailed ratings (linked to the report)
+     * @return transient report ready for validation and persist
+     */
     private ScoutingReport buildReport(Scout scout,
                                        Player player,
                                        List<Match> basedOnMatches,
@@ -136,6 +175,12 @@ public class ScoutingReportService {
         return report;
     }
 
+    /**
+     * Runs all {@link ScoutingReport} invariants and saves the entity.
+     *
+     * @param report fully wired report graph
+     * @return managed instance returned by the repository
+     */
     private ScoutingReport persistValidated(ScoutingReport report) {
         report.validateDetailedRatings();
         report.validateMatchesObservedByScout();

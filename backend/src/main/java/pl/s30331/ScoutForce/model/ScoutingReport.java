@@ -1,6 +1,8 @@
 package pl.s30331.ScoutForce.model;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -16,7 +18,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Scouting Report created by a Scout for a specific Player.
+ * Written evaluation of a {@link Player} by a {@link Scout}, grounded in observed {@link Match}es.
  */
 @Entity
 @Table(name = "scouting_report")
@@ -29,20 +31,25 @@ public class ScoutingReport {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @NotNull
     @Column(nullable = false)
     private LocalDate createdAt;
 
+    @NotBlank
     @Column(nullable = false, columnDefinition = "TEXT")
     private String note;
 
+    @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private RecommendationType recommendation;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "scout_id", nullable = false)
     private Scout createdBy;
 
+    @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "player_id", nullable = false)
     private Player player;
@@ -56,11 +63,16 @@ public class ScoutingReport {
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "report_match",
-            joinColumns = @JoinColumn(name = "report_id"),
-            inverseJoinColumns = @JoinColumn(name = "match_id")
+            joinColumns = @JoinColumn(name = "report_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "match_id", nullable = false)
     )
     private List<Match> basedOnMatches = new ArrayList<>();
 
+    /**
+     * Weighted sum of detailed ratings ({@code rating × weight}), scaled to two decimals.
+     *
+     * @return final score, or {@code 0} when there are no ratings
+     */
     @Transient
     public BigDecimal getFinalRating() {
         if (detailedRatings == null || detailedRatings.isEmpty()) return BigDecimal.ZERO;
@@ -70,6 +82,11 @@ public class ScoutingReport {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Ensures at least one rating exists and weights sum to exactly {@code 1.0}.
+     *
+     * @throws IllegalStateException when the invariant is violated
+     */
     public void validateDetailedRatings() {
         if (detailedRatings == null || detailedRatings.isEmpty()) {
             throw new IllegalStateException("Report needs at least one Detailed Rating.");
@@ -83,6 +100,11 @@ public class ScoutingReport {
         }
     }
 
+    /**
+     * Ensures every match in {@link #basedOnMatches} appears in the scout's watched list.
+     *
+     * @throws IllegalStateException with E1 message when a match was not observed by the scout
+     */
     public void validateMatchesObservedByScout() {
         if (createdBy == null) {
             throw new IllegalStateException("Scouting report must have an authoring scout.");
@@ -100,6 +122,11 @@ public class ScoutingReport {
         }
     }
 
+    /**
+     * Ensures every match in {@link #basedOnMatches} is linked to the player via {@link MatchStats}.
+     *
+     * @throws IllegalStateException with E1 message when the player did not play in a listed match
+     */
     public void validateMatchesPlayedByPlayer() {
         if (player == null) {
             throw new IllegalStateException("Scouting report must refer to a player.");

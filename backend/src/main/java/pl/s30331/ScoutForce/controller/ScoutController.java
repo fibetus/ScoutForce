@@ -7,7 +7,7 @@ import pl.s30331.ScoutForce.model.Scout;
 import pl.s30331.ScoutForce.service.ScoutService;
 
 /**
- * Resolves scout identity for demo clients that cannot rely on a fixed database id.
+ * Resolves {@link Scout} identity for clients that cannot hard-code a database id.
  */
 @RestController
 @RequestMapping("/api/scouts")
@@ -19,6 +19,8 @@ public class ScoutController {
 
     /**
      * Returns the demo scout seeded with license {@link ScoutService#DEFAULT_LICENSE_NUMBER}.
+     *
+     * @return {@code 200 OK} with id, name and license number
      */
     @GetMapping("/default")
     public ResponseEntity<ScoutSummaryDto> getDefaultScout() {
@@ -31,6 +33,12 @@ public class ScoutController {
         ));
     }
 
+    /**
+     * Looks up a scout by license number.
+     *
+     * @param licenseNumber unique scout license (e.g. {@code SCT-001})
+     * @return {@code 200 OK} with summary fields, or {@code 404} when unknown
+     */
     @GetMapping("/license/{licenseNumber}")
     public ResponseEntity<ScoutSummaryDto> getScoutByLicense(@PathVariable String licenseNumber) {
         Scout scout = scoutService.getScoutByLicenseNumber(licenseNumber);
@@ -42,5 +50,13 @@ public class ScoutController {
         ));
     }
 
+    /**
+     * Minimal scout projection for frontend bootstrap.
+     *
+     * @param id            scout primary key
+     * @param firstName     first name
+     * @param lastName      last name
+     * @param licenseNumber unique license
+     */
     public record ScoutSummaryDto(Long id, String firstName, String lastName, String licenseNumber) {}
 }
