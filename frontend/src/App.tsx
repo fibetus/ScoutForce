@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { apiClient } from "./api/client";
 import {
@@ -120,12 +120,40 @@ export default function App() {
   const [toast, setToast] = useState<ToastState | null>(null);
 
   /**
+   * Reloads the scout's observed players from the backend.
+   *
+   * Keeps {@link selectedPlayer} in sync when the same player is still selected,
+   * so {@code averageRating} reflects newly saved reports.
+   */
+  const refreshPlayers = useCallback(
+    async (id: number, options?: { showLoading?: boolean }) => {
+      if (options?.showLoading) {
+        setLoadingPlayers(true);
+      }
+      try {
+        const result = await apiClient.getObservablePlayers(id);
+        setPlayers(result);
+        setSelectedPlayer((prev) =>
+          prev === null ? null : result.find((p) => p.id === prev.id) ?? prev,
+        );
+        setLoadError([]);
+      } catch (err) {
+        setLoadError(mapErrorToUi(err));
+      } finally {
+        if (options?.showLoading) {
+          setLoadingPlayers(false);
+        }
+      }
+    },
+    [],
+  );
+
+  /**
    * Resolves the demo scout and loads observed players on mount.
    */
   useEffect(() => {
     let cancelled = false;
-    const loadPlayers = async () => {
-      setLoadingPlayers(true);
+    const loadInitial = async () => {
       setLoadError([]);
       try {
         const scout = await apiClient.getDefaultScout();
@@ -133,25 +161,19 @@ export default function App() {
           return;
         }
         setScoutId(scout.id);
-        const result = await apiClient.getObservablePlayers(scout.id);
-        if (!cancelled) {
-          setPlayers(result);
-        }
+        await refreshPlayers(scout.id, { showLoading: true });
       } catch (err) {
         if (!cancelled) {
           setLoadError(mapErrorToUi(err));
-        }
-      } finally {
-        if (!cancelled) {
           setLoadingPlayers(false);
         }
       }
     };
-    void loadPlayers();
+    void loadInitial();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshPlayers]);
 
   /**
    * Auto-dismisses the active toast after {@link TOAST_TIMEOUT_MS}.
@@ -298,6 +320,7 @@ export default function App() {
           );
 
       setReportResult(result);
+      await refreshPlayers(scoutId);
       setCurrentView("report-success");
       setToast({
         message: `Report saved. Final rating: ${result.finalRating.toFixed(2)}`,
