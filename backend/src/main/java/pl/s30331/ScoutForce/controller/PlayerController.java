@@ -66,7 +66,7 @@ public class PlayerController {
      * {@code <<extend>> View Player's Matches} — scout-observed matches in which the player appeared.
      *
      * <p>Each {@link MatchWithStatsDto} includes the player's box-score for that match, resolved via
-     * {@link ViewPlayerMatchesService#findMatchStatsForMatch(Player, Match)}. When no row exists, a
+     * {@link ViewPlayerMatchesService#getMatchStatsForMatch(Player, Match)}. When no row exists, a
      * zeroed {@link MatchStatsDto} is returned.</p>
      *
      * @param scoutId  observing scout id
@@ -210,7 +210,7 @@ public class PlayerController {
                 match.getGuestScore(),
                 toClubDto(match.getHost()),
                 toClubDto(match.getGuest()),
-                viewPlayerMatchesService.findMatchStatsForMatch(player, match)
+                viewPlayerMatchesService.getMatchStatsForMatch(player, match)
                         .map(this::toMatchStatsDto)
                         .orElseGet(this::zeroMatchStats)
         );

@@ -102,7 +102,7 @@ public class ViewPlayerMatchesService {
      * @param match  match to look up (only {@link Match#getId()} is compared)
      * @return the matching {@link MatchStats} row, or empty when {@code match.id} is null or no row exists
      */
-    public Optional<MatchStats> findMatchStatsForMatch(Player player, Match match) {
+    public Optional<MatchStats> getMatchStatsForMatch(Player player, Match match) {
         if (match.getId() == null) {
             return Optional.empty();
         }
