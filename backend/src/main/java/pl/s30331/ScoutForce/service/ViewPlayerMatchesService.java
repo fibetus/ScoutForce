@@ -45,8 +45,8 @@ public class ViewPlayerMatchesService {
      * <p>Player match ids are collected from {@link Player#getMatchStats()} → {@link MatchStats#getMatch()};
      * the result is filtered from {@link Scout#getWatchedMatches()}.</p>
      *
-     * @param player loaded player aggregate root (typically from {@link PlayerService#findPlayerById(Long)})
-     * @param scout  loaded scout aggregate root (typically from {@link ScoutService#findScoutById(Long)})
+     * @param player loaded player aggregate root (typically from {@link PlayerService#getPlayerById(Long)})
+     * @param scout  loaded scout aggregate root (typically from {@link ScoutService#getScoutById(Long)})
      * @return intersection of watched and played matches; never {@code null}, may be empty
      */
     public List<Match> getObservedMatchesForPlayer(Player player, Scout scout) {

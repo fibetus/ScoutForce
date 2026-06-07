@@ -29,7 +29,7 @@ public class PlayerService {
      * @return the loaded {@link Player} aggregate root
      * @throws jakarta.persistence.EntityNotFoundException if no player exists for {@code playerId}
      */
-    public Player findPlayerById(Long playerId) {
+    public Player getPlayerById(Long playerId) {
         return playerRepository.findById(playerId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Player not found: " + playerId));
@@ -52,6 +52,6 @@ public class PlayerService {
      * @throws jakarta.persistence.EntityNotFoundException if the player does not exist
      */
     public List<ScoutingReport> getScoutingReports(Long playerId) {
-        return findPlayerById(playerId).getScoutingReports();
+        return getPlayerById(playerId).getScoutingReports();
     }
 }

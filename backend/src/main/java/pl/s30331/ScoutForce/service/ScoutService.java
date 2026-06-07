@@ -29,7 +29,7 @@ public class ScoutService {
      * @return the loaded {@link Scout} aggregate root
      * @throws jakarta.persistence.EntityNotFoundException if no scout exists for {@code scoutId}
      */
-    public Scout findScoutById(Long scoutId) {
+    public Scout getScoutById(Long scoutId) {
         return scoutRepository.findById(scoutId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Scout not found: " + scoutId));

@@ -53,7 +53,7 @@ public class PlayerController {
      */
     @GetMapping("/scouts/{scoutId}/players")
     public ResponseEntity<List<PlayerDto>> getObservablePlayers(@PathVariable Long scoutId) {
-        Scout scout = scoutService.findScoutById(scoutId);
+        Scout scout = scoutService.getScoutById(scoutId);
 
         List<PlayerDto> players = viewPlayersListService.getPlayersObservedByScout(scout).stream()
                 .map(player -> toPlayerDto(player, scout))
@@ -79,8 +79,8 @@ public class PlayerController {
             @PathVariable Long scoutId,
             @PathVariable Long playerId) {
 
-        Scout scout = scoutService.findScoutById(scoutId);
-        Player player = playerService.findPlayerById(playerId);
+        Scout scout = scoutService.getScoutById(scoutId);
+        Player player = playerService.getPlayerById(playerId);
 
         List<Match> matches = viewPlayerMatchesService.getObservedMatchesForPlayer(player, scout);
 
@@ -117,7 +117,7 @@ public class PlayerController {
      */
     @GetMapping("/players/{playerId}")
     public ResponseEntity<PlayerDto> getPlayerWithStats(@PathVariable Long playerId) {
-        PlayerDto player = toPlayerDto(playerService.findPlayerById(playerId));
+        PlayerDto player = toPlayerDto(playerService.getPlayerById(playerId));
 
         return ResponseEntity.ok(player);
     }

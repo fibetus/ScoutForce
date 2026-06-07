@@ -49,8 +49,8 @@ public class ScoutingReportService {
                                                List<DetailedRating> ratings) {
         validateInput(note, recommendation, ratings);
 
-        Scout  scout  = scoutService.findScoutById(scoutId);
-        Player player = playerService.findPlayerById(playerId);
+        Scout  scout  = scoutService.getScoutById(scoutId);
+        Player player = playerService.getPlayerById(playerId);
 
         List<Match> basedOnMatches = viewPlayerMatchesService
                 .getObservedMatchesForPlayer(player, scout);
@@ -93,8 +93,8 @@ public class ScoutingReportService {
             throw new IllegalStateException("At least one match must be selected for the report.");
         }
 
-        Scout  scout  = scoutService.findScoutById(scoutId);
-        Player player = playerService.findPlayerById(playerId);
+        Scout  scout  = scoutService.getScoutById(scoutId);
+        Player player = playerService.getPlayerById(playerId);
 
         List<Match> playerObserved = viewPlayerMatchesService
                 .getObservedMatchesForPlayer(player, scout);
