@@ -1,6 +1,10 @@
 package pl.s30331.ScoutForce.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
@@ -14,6 +18,7 @@ import pl.s30331.ScoutForce.model.DetailedRating;
 import pl.s30331.ScoutForce.model.enums.RecommendationType;
 import pl.s30331.ScoutForce.service.ScoutingReportService;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -49,7 +54,7 @@ public class ScoutingReportController {
                         playerId,
                         request.getNote(),
                         request.getRecommendation(),
-                        request.getDetailedRatings()
+                        toEntities(request.getDetailedRatings())
                 )));
     }
 
@@ -74,8 +79,30 @@ public class ScoutingReportController {
                         request.getMatchIds(),
                         request.getNote(),
                         request.getRecommendation(),
-                        request.getDetailedRatings()
+                        toEntities(request.getDetailedRatings())
                 )));
+    }
+
+    /**
+     * Maps validated request DTOs to transient {@link DetailedRating} entities.
+     *
+     * <p>The parent {@link pl.s30331.ScoutForce.model.ScoutingReport} reference is intentionally
+     * omitted here — it is wired in {@link ScoutingReportService} when the report aggregate
+     * is assembled. Using a separate input type avoids {@code @Valid} rejecting requests whose
+     * rating lines do not yet carry a {@code scoutingReport} field.</p>
+     *
+     * @param requests validated rating lines from the request body
+     * @return detached entities ready for service-layer composition
+     */
+    private List<DetailedRating> toEntities(List<CreateDetailedRatingRequest> requests) {
+        return requests.stream().map(r -> {
+            DetailedRating dr = new DetailedRating();
+            dr.setType(r.getType());
+            dr.setRating(r.getRating());
+            dr.setComment(r.getComment());
+            dr.setWeight(r.getWeight());
+            return dr;
+        }).toList();
     }
 
     /** JSON body for the default create-report endpoint. */
@@ -87,7 +114,7 @@ public class ScoutingReportController {
         private RecommendationType recommendation;
         @NotEmpty
         @Valid
-        private List<DetailedRating> detailedRatings;
+        private List<CreateDetailedRatingRequest> detailedRatings;
     }
 
     /** JSON body for the A1 create-report-from-matches endpoint. */
@@ -101,6 +128,21 @@ public class ScoutingReportController {
         private RecommendationType recommendation;
         @NotEmpty
         @Valid
-        private List<DetailedRating> detailedRatings;
+        private List<CreateDetailedRatingRequest> detailedRatings;
+    }
+
+    /** Incoming rating line — no parent report reference (wired in the service layer). */
+    @Data
+    public static class CreateDetailedRatingRequest {
+        @NotBlank
+        private String type;
+        @NotNull
+        @Min(1) @Max(10)
+        private BigDecimal rating;
+        @NotBlank
+        private String comment;
+        @NotNull
+        @DecimalMin("0.0") @DecimalMax("1.0")
+        private BigDecimal weight;
     }
 }
