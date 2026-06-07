@@ -20,11 +20,15 @@ import pl.s30331.ScoutForce.service.ViewPlayersListService;
 import java.util.List;
 
 /**
- * REST controller exposing read-only player data scoped to a single scout.
+ * REST endpoints for read-only player views: observed players list, match history, global player
+ * catalogue, and scouting reports.
  *
- * <p>Following the project's mandatory "associations, not filtering" rule, every aggregate root is
- * loaded by its identifier and related data is reached by navigating in-memory associations via
- * application services. No foreign-key filtering finders are used.</p>
+ * <p>Aggregate roots are loaded by id via application services; related data is reached through
+ * in-memory association navigation (never foreign-key filtering finders). KPI and per-match stats
+ * are delegated to {@link ViewPlayerMatchesService}.</p>
+ *
+ * <p>The class is {@link Transactional} with {@code readOnly = true} so lazy associations can be
+ * traversed safely within each request.</p>
  */
 @RestController
 @RequestMapping("/api")
@@ -39,10 +43,13 @@ public class PlayerController {
     private final ViewPlayerMatchesService viewPlayerMatchesService;
 
     /**
-     * Returns the players the given scout has observed (those eligible for a new report).
+     * {@code <<include>> View Players List} — players the scout has observed (eligible for a new report).
      *
-     * @param scoutId the identifier of the scout whose observed players are requested
-     * @return {@code 200 OK} with the list of observed players as {@link PlayerDto}
+     * <p>KPI in each {@link PlayerDto} is scoped to matches both played by the player and observed
+     * by the scout ({@link ViewPlayerMatchesService#computeKpiObservedByScout(Player, Scout)}).</p>
+     *
+     * @param scoutId authoring / viewing scout id
+     * @return {@code 200 OK} with observed players as {@link PlayerDto}
      */
     @GetMapping("/scouts/{scoutId}/players")
     public ResponseEntity<List<PlayerDto>> getObservablePlayers(@PathVariable Long scoutId) {
@@ -56,13 +63,16 @@ public class PlayerController {
     }
 
     /**
-     * Returns the matches observed by the scout in which the given player also appeared, each
-     * enriched with that player's box-score for the match.
+     * {@code <<extend>> View Player's Matches} — scout-observed matches in which the player appeared.
      *
-     * @param scoutId  the identifier of the observing scout
-     * @param playerId the identifier of the player whose observed matches are requested
-     * @return {@code 204 No Content} when the player has no matches observed by the scout, otherwise
-     *         {@code 200 OK} with the list of {@link MatchWithStatsDto}
+     * <p>Each {@link MatchWithStatsDto} includes the player's box-score for that match, resolved via
+     * {@link ViewPlayerMatchesService#findMatchStatsForMatch(Player, Match)}. When no row exists, a
+     * zeroed {@link MatchStatsDto} is returned.</p>
+     *
+     * @param scoutId  observing scout id
+     * @param playerId subject player id
+     * @return {@code 204 No Content} when the intersection is empty, otherwise {@code 200 OK} with
+     *         {@link MatchWithStatsDto} list
      */
     @GetMapping("/scouts/{scoutId}/players/{playerId}/matches")
     public ResponseEntity<List<MatchWithStatsDto>> getPlayerMatchesForScout(
@@ -86,9 +96,9 @@ public class PlayerController {
     }
 
     /**
-     * Returns a list of all players in the system, enriched with their global statistics.
+     * Global extension — all players in the system with career-wide KPI.
      *
-     * @return {@code 200 OK} with the list of all players as {@link PlayerDto}
+     * @return {@code 200 OK} with every player as {@link PlayerDto}
      */
     @GetMapping("/players")
     public ResponseEntity<List<PlayerDto>> getPlayersWithStats() {
@@ -100,9 +110,9 @@ public class PlayerController {
     }
 
     /**
-     * Returns a single player by ID, enriched with their global statistics.
+     * Global extension — single player profile with career-wide KPI.
      *
-     * @param playerId the identifier of the player requested
+     * @param playerId subject player id
      * @return {@code 200 OK} with the player as {@link PlayerDto}
      */
     @GetMapping("/players/{playerId}")
@@ -113,11 +123,11 @@ public class PlayerController {
     }
 
     /**
-     * Returns all scouting reports authored for the given player.
+     * Returns scouting reports authored for the player.
      *
-     * @param playerId the identifier of the player whose reports are requested
-     * @return {@code 204 No Content} when the player has no reports, otherwise
-     *         {@code 200 OK} with the list of {@link ScoutingReportDto}s
+     * @param playerId subject player id
+     * @return {@code 204 No Content} when the player has no reports, otherwise {@code 200 OK} with
+     *         {@link ScoutingReportDto} list
      */
     @GetMapping("/players/{playerId}/reports")
     public ResponseEntity<List<ScoutingReportDto>> getPlayerReports(@PathVariable Long playerId) {
@@ -131,6 +141,12 @@ public class PlayerController {
         return ResponseEntity.ok(reports);
     }
 
+    /**
+     * Maps a player to {@link PlayerDto} with KPI scoped to the scout's observed matches.
+     *
+     * @param player loaded player aggregate root
+     * @param scout  loaded scout aggregate root
+     */
     private PlayerDto toPlayerDto(Player player, Scout scout) {
         return new PlayerDto(
                 player.getId(),
@@ -148,6 +164,11 @@ public class PlayerController {
         );
     }
 
+    /**
+     * Maps a player to {@link PlayerDto} with career-wide KPI over all {@link MatchStats} rows.
+     *
+     * @param player loaded player aggregate root
+     */
     private PlayerDto toPlayerDto(Player player) {
         return new PlayerDto(
                 player.getId(),
@@ -165,10 +186,21 @@ public class PlayerController {
         );
     }
 
+    /**
+     * Maps a {@link Club} entity to {@link ClubDto}.
+     *
+     * @param club the player's or match participant's club
+     */
     private ClubDto toClubDto(Club club) {
         return new ClubDto(club.getName(), club.getCity(), club.getLeague());
     }
 
+    /**
+     * Maps a {@link Match} plus the player's box-score row to {@link MatchWithStatsDto}.
+     *
+     * @param match  match from the scout–player intersection
+     * @param player subject player (stats are resolved from {@link Player#getMatchStats()})
+     */
     private MatchWithStatsDto toMatchWithStatsDto(Match match, Player player) {
         return new MatchWithStatsDto(
                 match.getId(),
@@ -184,6 +216,11 @@ public class PlayerController {
         );
     }
 
+    /**
+     * Maps a single {@link MatchStats} entity to {@link MatchStatsDto}.
+     *
+     * @param stats player's box-score row for one match
+     */
     private MatchStatsDto toMatchStatsDto(MatchStats stats) {
         return new MatchStatsDto(
                 stats.getMinutesPlayed(),
@@ -195,10 +232,18 @@ public class PlayerController {
         );
     }
 
+    /**
+     * Fallback box-score when the player has no {@link MatchStats} row for a match in the intersection.
+     */
     private MatchStatsDto zeroMatchStats() {
         return new MatchStatsDto(0, 0, 0, 0, 0, 0);
     }
 
+    /**
+     * Maps service-layer {@link ViewPlayerMatchesService.AggregatedBoxScore} to {@link PlayerKpiDto}.
+     *
+     * @param kpi aggregated averages from {@link ViewPlayerMatchesService}
+     */
     private PlayerKpiDto toKpiDto(ViewPlayerMatchesService.AggregatedBoxScore kpi) {
         return new PlayerKpiDto(
                 kpi.avgMinutes(),

@@ -18,19 +18,23 @@ import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 
 /**
- * Service for the {@code <<extend>> View Player's Matches} use case and player box-score reads.
+ * {@code <<extend>> View Player's Matches} — reads match participation and box-score data for a player.
  *
- * Returns the intersection of:
- *   – matches in which the given player participated (via MatchStats association)
- *   – matches observed by the given scout (via Scout.watchedMatches association)
+ * <p>All data is reached by navigating aggregate associations in memory:
+ * {@link Player#getMatchStats()} for the player's rows and {@link Scout#getWatchedMatches()} for
+ * scout-observed matches. No repository finder filters by foreign key.</p>
  *
- * Navigation is purely association-based, no filtering queries.
+ * <p>When both player and scout are in scope, results are the <em>intersection</em> of those two
+ * association sets (same match id in both). {@link MatchStats} rows are always taken from
+ * {@link Player#getMatchStats()} — each row already belongs to the player, so reverse navigation
+ * through {@code match.getMatchStats()} is never used.</p>
  */
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ViewPlayerMatchesService {
 
+    /** Sentinel returned by {@link #aggregate(List)} when the input list is empty. */
     private static final AggregatedBoxScore ZERO_KPI = new AggregatedBoxScore(
             BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
             BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
@@ -38,9 +42,12 @@ public class ViewPlayerMatchesService {
     /**
      * Returns matches observed by the scout in which the player also participated.
      *
-     * @param player the player whose matches are being queried
-     * @param scout  the scout whose observations scope the result
-     * @return the intersection of matches as a list
+     * <p>Player match ids are collected from {@link Player#getMatchStats()} → {@link MatchStats#getMatch()};
+     * the result is filtered from {@link Scout#getWatchedMatches()}.</p>
+     *
+     * @param player loaded player aggregate root (typically from {@link PlayerService#findPlayerById(Long)})
+     * @param scout  loaded scout aggregate root (typically from {@link ScoutService#findScoutById(Long)})
+     * @return intersection of watched and played matches; never {@code null}, may be empty
      */
     public List<Match> getObservedMatchesForPlayer(Player player, Scout scout) {
         Set<Long> playerMatchIds = player.getMatchStats().stream()
@@ -56,10 +63,10 @@ public class ViewPlayerMatchesService {
     }
 
     /**
-     * Returns every {@link MatchStats} row linked to the player via {@link Player#getMatchStats()}.
+     * Returns every {@link MatchStats} row linked to the player.
      *
-     * @param player the player whose statistics are requested
-     * @return all box-score rows for the player
+     * @param player loaded player aggregate root
+     * @return {@link Player#getMatchStats()} (same persistence collection); never {@code null}
      */
     public List<MatchStats> getAllMatchStats(Player player) {
         return player.getMatchStats();
@@ -68,13 +75,12 @@ public class ViewPlayerMatchesService {
     /**
      * Returns {@link MatchStats} rows for matches the scout observed in which the player played.
      *
-     * <p>Scoped by intersecting observed match ids with {@link Player#getMatchStats()} —
-     * each row already belongs to the player, so no reverse navigation through
-     * {@code match.getMatchStats()} is needed.</p>
+     * <p>Filters {@link Player#getMatchStats()} by match ids from
+     * {@link #getObservedMatchesForPlayer(Player, Scout)}.</p>
      *
-     * @param player the player whose statistics are requested
-     * @param scout  the scout whose observations scope the result
-     * @return box-score rows for the intersection
+     * @param player loaded player aggregate root
+     * @param scout  loaded scout aggregate root
+     * @return box-score rows for the intersection; never {@code null}, may be empty
      */
     public List<MatchStats> getMatchStatsObservedByScout(Player player, Scout scout) {
         Set<Long> observedMatchIds = getObservedMatchesForPlayer(player, scout).stream()
@@ -90,11 +96,11 @@ public class ViewPlayerMatchesService {
     }
 
     /**
-     * Finds the player's box-score for a specific match via {@link Player#getMatchStats()}.
+     * Finds the player's box-score for a single match.
      *
-     * @param player the player whose statistics are requested
-     * @param match  the match to look up
-     * @return the matching row, if present
+     * @param player loaded player aggregate root
+     * @param match  match to look up (only {@link Match#getId()} is compared)
+     * @return the matching {@link MatchStats} row, or empty when {@code match.id} is null or no row exists
      */
     public Optional<MatchStats> findMatchStatsForMatch(Player player, Match match) {
         if (match.getId() == null) {
@@ -107,26 +113,34 @@ public class ViewPlayerMatchesService {
     }
 
     /**
-     * Averages box-score fields over all of the player's {@link MatchStats} rows.
+     * Computes global KPI averages over all of the player's {@link MatchStats} rows.
      *
-     * @param player the player whose global KPI is computed
-     * @return averaged values, or zeros when the player has no statistics
+     * @param player loaded player aggregate root
+     * @return per-field arithmetic means rounded to one decimal place, or all zeros when the player
+     *         has no statistics
      */
     public AggregatedBoxScore computeKpiForPlayer(Player player) {
         return aggregate(getAllMatchStats(player));
     }
 
     /**
-     * Averages box-score fields over the player's statistics in scout-observed matches.
+     * Computes KPI averages scoped to scout-observed matches in which the player appeared.
      *
-     * @param player the player whose KPI is computed
-     * @param scout  the scout whose observations scope the aggregation
-     * @return averaged values, or zeros when no matching statistics exist
+     * @param player loaded player aggregate root
+     * @param scout  loaded scout aggregate root
+     * @return per-field arithmetic means rounded to one decimal place, or all zeros when the
+     *         intersection yields no statistics
      */
     public AggregatedBoxScore computeKpiObservedByScout(Player player, Scout scout) {
         return aggregate(getMatchStatsObservedByScout(player, scout));
     }
 
+    /**
+     * Averages each box-score field across the given rows.
+     *
+     * @param stats non-null list of {@link MatchStats} (may be empty)
+     * @return {@link #ZERO_KPI} when {@code stats} is empty, otherwise a new {@link AggregatedBoxScore}
+     */
     private AggregatedBoxScore aggregate(List<MatchStats> stats) {
         if (stats.isEmpty()) {
             return ZERO_KPI;
@@ -141,6 +155,13 @@ public class ViewPlayerMatchesService {
         );
     }
 
+    /**
+     * Arithmetic mean of a single integer field across {@link MatchStats} rows.
+     *
+     * @param stats non-empty list of rows
+     * @param field getter for the field to average (e.g. {@link MatchStats#getPoints})
+     * @return mean rounded to one decimal place ({@link RoundingMode#HALF_UP})
+     */
     private BigDecimal average(List<MatchStats> stats, ToIntFunction<MatchStats> field) {
         long sum = stats.stream().mapToInt(field).sum();
         return BigDecimal.valueOf(sum)
@@ -148,14 +169,15 @@ public class ViewPlayerMatchesService {
     }
 
     /**
-     * Averaged box-score values computed from a player's {@link MatchStats} rows.
+     * Service-layer result of KPI aggregation — mapped to {@link pl.s30331.ScoutForce.controller.dto.PlayerKpiDto}
+     * in the web layer.
      *
-     * @param avgMinutes  average minutes played
-     * @param avgPoints   average points
-     * @param avgRebounds average rebounds
-     * @param avgAssists  average assists
-     * @param avgSteals   average steals
-     * @param avgBlocks   average blocks
+     * @param avgMinutes  average minutes played per match
+     * @param avgPoints   average points per match
+     * @param avgRebounds average rebounds per match
+     * @param avgAssists  average assists per match
+     * @param avgSteals   average steals per match
+     * @param avgBlocks   average blocks per match
      */
     public record AggregatedBoxScore(
             BigDecimal avgMinutes,
