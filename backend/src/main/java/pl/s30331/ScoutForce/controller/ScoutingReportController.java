@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.s30331.ScoutForce.controller.dto.ScoutingReportDto;
@@ -40,7 +41,7 @@ public class ScoutingReportController {
      * @param scoutId  authoring scout id
      * @param playerId subject player id
      * @param request  note, recommendation and detailed ratings
-     * @return {@code 200 OK} with the saved report as {@link ScoutingReportDto}
+     * @return {@code 201 Created} with the saved report as {@link ScoutingReportDto}
      */
     @PostMapping("/scouts/{scoutId}/players/{playerId}/reports")
     public ResponseEntity<ScoutingReportDto> createReport(
@@ -48,7 +49,7 @@ public class ScoutingReportController {
             @PathVariable Long playerId,
             @Valid @RequestBody CreateScoutingReportRequest request) {
 
-        return ResponseEntity.ok(ScoutingReportDtoMapper.toDto(
+        return ResponseEntity.status(HttpStatus.CREATED).body(ScoutingReportDtoMapper.toDto(
                 scoutingReportService.createScoutingReport(
                         scoutId,
                         playerId,
@@ -64,7 +65,7 @@ public class ScoutingReportController {
      * @param scoutId  authoring scout id
      * @param playerId subject player id
      * @param request  selected match ids plus report body
-     * @return {@code 200 OK} with the saved report as {@link ScoutingReportDto}
+     * @return {@code 201 Created} with the saved report as {@link ScoutingReportDto}
      */
     @PostMapping("/scouts/{scoutId}/players/{playerId}/reports/from-matches")
     public ResponseEntity<ScoutingReportDto> createReportFromSelectedMatches(
@@ -72,7 +73,7 @@ public class ScoutingReportController {
             @PathVariable Long playerId,
             @Valid @RequestBody CreateScoutingReportFromMatchesRequest request) {
 
-        return ResponseEntity.ok(ScoutingReportDtoMapper.toDto(
+        return ResponseEntity.status(HttpStatus.CREATED).body(ScoutingReportDtoMapper.toDto(
                 scoutingReportService.createScoutingReportFromSelectedMatches(
                         scoutId,
                         playerId,
