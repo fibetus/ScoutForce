@@ -8,6 +8,7 @@ import pl.s30331.ScoutForce.model.enums.RecommendationType;
 import pl.s30331.ScoutForce.repository.ScoutingReportRepository;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -48,8 +49,8 @@ public class ScoutingReportService {
                                                List<DetailedRating> ratings) {
         validateInput(note, recommendation, ratings);
 
-        Scout  scout  = scoutService.getScout(scoutId);
-        Player player = playerService.getPlayer(playerId);
+        Scout  scout  = scoutService.findScoutById(scoutId);
+        Player player = playerService.findPlayerById(playerId);
 
         List<Match> basedOnMatches = viewPlayerMatchesService
                 .getObservedMatchesForPlayer(player, scout);
@@ -92,8 +93,8 @@ public class ScoutingReportService {
             throw new IllegalStateException("At least one match must be selected for the report.");
         }
 
-        Scout  scout  = scoutService.getScout(scoutId);
-        Player player = playerService.getPlayer(playerId);
+        Scout  scout  = scoutService.findScoutById(scoutId);
+        Player player = playerService.findPlayerById(playerId);
 
         List<Match> playerObserved = viewPlayerMatchesService
                 .getObservedMatchesForPlayer(player, scout);
@@ -170,7 +171,7 @@ public class ScoutingReportService {
         report.setRecommendation(recommendation);
         report.setCreatedBy(scout);
         report.setPlayer(player);
-        report.setBasedOnMatches(basedOnMatches);
+        report.setBasedOnMatches(new ArrayList<>(basedOnMatches));
 
         for (DetailedRating dr : ratings) {
             dr.setScoutingReport(report);

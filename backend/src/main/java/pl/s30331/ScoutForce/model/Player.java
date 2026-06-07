@@ -93,6 +93,9 @@ public class Player extends Person {
                   Double height,
                   Double wingspan,
                   PlayerExperience initialExperience) {
+        if (initialExperience == null) {
+            throw new IllegalArgumentException("Initial PlayerExperience must not be null.");
+        }
         this.position     = position;
         this.playerStatus = status;
         this.weight       = weight;
@@ -213,6 +216,9 @@ public class Player extends Person {
      * @throws IllegalArgumentException for unknown implementations
      */
     private void assignExperience(PlayerExperience experience) {
+        if (experience == null) {
+            throw new IllegalArgumentException("Initial PlayerExperience must not be null.");
+        }
         if (experience instanceof UniversityExperience ue) {
             setUniversityExperience(ue);
         } else if (experience instanceof ProfessionalExperience pe) {

@@ -1,5 +1,10 @@
 package pl.s30331.ScoutForce.controller;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +41,7 @@ public class ScoutingReportController {
     public ResponseEntity<ScoutingReportDto> createReport(
             @PathVariable Long scoutId,
             @PathVariable Long playerId,
-            @RequestBody CreateScoutingReportRequest request) {
+            @Valid @RequestBody CreateScoutingReportRequest request) {
 
         return ResponseEntity.ok(ScoutingReportDtoMapper.toDto(
                 scoutingReportService.createScoutingReport(
@@ -60,7 +65,7 @@ public class ScoutingReportController {
     public ResponseEntity<ScoutingReportDto> createReportFromSelectedMatches(
             @PathVariable Long scoutId,
             @PathVariable Long playerId,
-            @RequestBody CreateScoutingReportFromMatchesRequest request) {
+            @Valid @RequestBody CreateScoutingReportFromMatchesRequest request) {
 
         return ResponseEntity.ok(ScoutingReportDtoMapper.toDto(
                 scoutingReportService.createScoutingReportFromSelectedMatches(
@@ -74,19 +79,28 @@ public class ScoutingReportController {
     }
 
     /** JSON body for the default create-report endpoint. */
-    @lombok.Data
+    @Data
     public static class CreateScoutingReportRequest {
+        @NotBlank
         private String note;
+        @NotNull
         private RecommendationType recommendation;
+        @NotEmpty
+        @Valid
         private List<DetailedRating> detailedRatings;
     }
 
     /** JSON body for the A1 create-report-from-matches endpoint. */
-    @lombok.Data
+    @Data
     public static class CreateScoutingReportFromMatchesRequest {
+        @NotEmpty
         private List<Long> matchIds;
+        @NotBlank
         private String note;
+        @NotNull
         private RecommendationType recommendation;
+        @NotEmpty
+        @Valid
         private List<DetailedRating> detailedRatings;
     }
 }

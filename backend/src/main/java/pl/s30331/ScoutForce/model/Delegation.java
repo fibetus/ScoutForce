@@ -45,10 +45,6 @@ public class Delegation {
     @Column(nullable = false)
     private LocalDate endDate;
 
-    @NotBlank
-    @Column(nullable = false)
-    private String destination;
-
     @NotNull
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -64,7 +60,12 @@ public class Delegation {
     @JoinColumn(name = "director_id", nullable = false)
     private Director createdBy;
 
-    @OneToMany(mappedBy = "delegation", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "delegation_match",
+            joinColumns = @JoinColumn(name = "delegation_id", nullable = false),
+            inverseJoinColumns = @JoinColumn(name = "match_id", nullable = false)
+    )
     private List<Match> matches = new ArrayList<>();
 
     /**

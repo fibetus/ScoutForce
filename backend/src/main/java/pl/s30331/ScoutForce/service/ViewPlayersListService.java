@@ -20,7 +20,7 @@ public class ViewPlayersListService {
     /**
      * Returns the players the scout has marked as observed.
      *
-     * @param scout loaded scout aggregate root (typically from {@link ScoutService#getScout(Long)})
+     * @param scout loaded scout aggregate root (typically from {@link ScoutService#findScoutById(Long)})
      * @return mutable view of {@link Scout#getObservedPlayers()} (same persistence collection)
      */
     public List<Player> getPlayersObservedByScout(Scout scout) {

@@ -3,6 +3,7 @@ package pl.s30331.ScoutForce.exception;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -25,6 +26,21 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFound(EntityNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage());
+    }
+
+    /**
+     * Maps Bean Validation failures ({@code @Valid} on request bodies) to HTTP 422.
+     *
+     * @param ex validation errors from the web layer
+     * @return JSON error payload with the first field message
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .findFirst()
+                .map(err -> err.getField() + ": " + err.getDefaultMessage())
+                .orElse("Validation failed.");
+        return error(HttpStatus.UNPROCESSABLE_ENTITY, message);
     }
 
     /**

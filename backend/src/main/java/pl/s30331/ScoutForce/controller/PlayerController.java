@@ -2,6 +2,7 @@ package pl.s30331.ScoutForce.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import pl.s30331.ScoutForce.controller.dto.ClubDto;
 import pl.s30331.ScoutForce.controller.dto.MatchStatsDto;
@@ -39,6 +40,7 @@ import java.util.function.ToIntFunction;
 @RequestMapping("/api")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*")
+@Transactional(readOnly = true)
 public class PlayerController {
 
     private final PlayerService            playerService;
@@ -59,7 +61,7 @@ public class PlayerController {
      */
     @GetMapping("/scouts/{scoutId}/players")
     public ResponseEntity<List<PlayerDto>> getObservablePlayers(@PathVariable Long scoutId) {
-        Scout scout = scoutService.getScout(scoutId);
+        Scout scout = scoutService.findScoutById(scoutId);
 
         List<PlayerDto> players = viewPlayersListService.getPlayersObservedByScout(scout).stream()
                 .map(player -> toPlayerDto(player, scout))
@@ -92,8 +94,8 @@ public class PlayerController {
             @PathVariable Long scoutId,
             @PathVariable Long playerId) {
 
-        Scout scout = scoutService.getScout(scoutId);
-        Player player = playerService.getPlayer(playerId);
+        Scout scout = scoutService.findScoutById(scoutId);
+        Player player = playerService.findPlayerById(playerId);
 
         List<Match> matches = viewPlayerMatchesService.getObservedMatchesForPlayer(player, scout);
 
@@ -138,7 +140,7 @@ public class PlayerController {
      */
     @GetMapping("/players/{playerId}")
     public ResponseEntity<PlayerDto> getPlayerWithStats(@PathVariable Long playerId) {
-        PlayerDto player = toPlayerDto(playerService.getPlayer(playerId));
+        PlayerDto player = toPlayerDto(playerService.findPlayerById(playerId));
 
         return ResponseEntity.ok(player);
     }

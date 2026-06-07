@@ -13,8 +13,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Single game between a {@link #host} club and a {@link #guest} club under a {@link Delegation}.
+ * Single game between a {@link #host} club and a {@link #guest} club.
  *
+ * <p>May occur during one or more {@link Delegation}s ({@link #delegations}).</p>
  * <p>Constraint: host and guest must be different clubs ({@link #validateBothTeams()}).</p>
  */
 @Entity
@@ -60,10 +61,8 @@ public class Match {
     @ManyToMany(mappedBy = "watchedMatches", fetch = FetchType.LAZY)
     private List<Scout> observedBy = new ArrayList<>();
 
-    @NotNull
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "delegation_id", nullable = false)
-    private Delegation delegation;
+    @ManyToMany(mappedBy = "matches", fetch = FetchType.LAZY)
+    private List<Delegation> delegations = new ArrayList<>();
 
     @ManyToMany(mappedBy = "basedOnMatches", fetch = FetchType.LAZY)
     private List<ScoutingReport> basedOnReports = new ArrayList<>();

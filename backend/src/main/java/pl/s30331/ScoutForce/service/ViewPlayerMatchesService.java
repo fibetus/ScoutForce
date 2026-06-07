@@ -2,6 +2,7 @@ package pl.s30331.ScoutForce.service;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.s30331.ScoutForce.model.Match;
 import pl.s30331.ScoutForce.model.MatchStats;
 import pl.s30331.ScoutForce.model.Player;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ViewPlayerMatchesService {
 
     /**
@@ -65,10 +67,9 @@ public class ViewPlayerMatchesService {
      * @return a list of all matches the player participated in
      */
     public List<Match> getMatchesForPlayer(Player player) {
-        List<Match> playerMatches = player.getMatchStats().stream()
+        return player.getMatchStats().stream()
                 .map(MatchStats::getMatch)
+                .filter(Objects::nonNull)
                 .toList();
-
-        return playerMatches;
     }
 }

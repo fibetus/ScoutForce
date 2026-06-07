@@ -35,10 +35,6 @@ public class Club {
     @Column(nullable = false)
     private String city;
 
-    @NotBlank
-    @Column(nullable = false)
-    private String country;
-
     /** Conference name (optional; used for NBA-style clubs). */
     private String conference;
 

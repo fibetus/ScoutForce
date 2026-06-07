@@ -11,6 +11,7 @@ import pl.s30331.ScoutForce.repository.ScoutRepository;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,10 +46,10 @@ public class DataInitializer implements CommandLineRunner {
             return;
         }
 
-        Club lakers     = persistClub("Los Angeles Lakers", "NBA", "Los Angeles", "USA", "Western", "Pacific");
-        Club celtics    = persistClub("Boston Celtics", "NBA", "Boston", "USA", "Eastern", "Atlantic");
-        Club duke       = persistClub("Duke Blue Devils", "NCAA", "Durham", "USA", null, null);
-        Club realMadrid = persistClub("Real Madrid Baloncesto", "EuroLeague", "Madrid", "Spain", null, null);
+        Club lakers     = persistClub("Los Angeles Lakers", "NBA", "Los Angeles", "Western", "Pacific");
+        Club celtics    = persistClub("Boston Celtics", "NBA", "Boston", "Eastern", "Atlantic");
+        Club duke       = persistClub("Duke Blue Devils", "NCAA", "Durham", null, null);
+        Club realMadrid = persistClub("Real Madrid Baloncesto", "EuroLeague", "Madrid", null, null);
 
         Director director = new Director();
         director.setFirstName("Rob");
@@ -130,30 +131,43 @@ public class DataInitializer implements CommandLineRunner {
         entityManager.flush();
 
         Delegation delegation1 = persistDelegation("NCAA West Tour", defaultScout, director,
-                LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 10), "Los Angeles");
+                LocalDate.of(2024, 11, 1), LocalDate.of(2024, 11, 10));
         Delegation delegation2 = persistDelegation("EuroLeague Trip", otherScout, director,
-                LocalDate.of(2024, 11, 5), LocalDate.of(2024, 11, 12), "Madrid");
+                LocalDate.of(2024, 11, 5), LocalDate.of(2024, 11, 12));
         Delegation delegation3 = persistDelegation("Mixed Scouting", defaultScout, director,
-                LocalDate.of(2024, 12, 1), LocalDate.of(2024, 12, 5), "Madrid");
+                LocalDate.of(2024, 12, 1), LocalDate.of(2024, 12, 5));
 
         Match match1 = persistMatch(LocalDate.of(2024, 11, 3), "Staples Center",
-                lakers, celtics, 110, 105, delegation1);
+                lakers, celtics, 110, 105);
         Match match2 = persistMatch(LocalDate.of(2024, 11, 5), "Pauley Pavilion",
-                duke, lakers, 88, 92, delegation1);
+                duke, lakers, 88, 92);
         Match match3 = persistMatch(LocalDate.of(2024, 11, 7), "WiZink Center",
-                realMadrid, celtics, 95, 89, delegation2);
+                realMadrid, celtics, 95, 89);
         Match match4 = persistMatch(LocalDate.of(2024, 12, 2), "WiZink Center",
-                realMadrid, lakers, 101, 99, delegation3);
+                realMadrid, lakers, 101, 99);
         Match match5 = persistMatch(LocalDate.of(2024, 11, 9), "WiZink Center",
-                realMadrid, duke, 88, 82, delegation2);
+                realMadrid, duke, 88, 82);
 
-        entityManager.persist(createMatchStats(playerA, match1, 36, 28, 8, 5, 2, 1, 3, 2, 10, 20, 3, 7, 5, 6));
-        entityManager.persist(createMatchStats(playerA, match2, 34, 22, 10, 7, 1, 2, 4, 3, 8, 18, 2, 5, 4, 5));
+        linkDelegationMatch(delegation1, match1);
+        linkDelegationMatch(delegation1, match2);
+        linkDelegationMatch(delegation2, match3);
+        linkDelegationMatch(delegation2, match5);
+        linkDelegationMatch(delegation3, match4);
+
+        MatchStats statsA1 = createMatchStats(playerA, match1, 36, 28, 8, 5, 2, 1, 3, 2, 10, 20, 3, 7, 5, 6);
+        MatchStats statsA2 = createMatchStats(playerA, match2, 34, 22, 10, 7, 1, 2, 4, 3, 8, 18, 2, 5, 4, 5);
+        MatchStats statsC2 = createMatchStats(playerC, match2, 30, 18, 7, 3, 0, 2, 2, 4, 7, 15, 1, 3, 3, 4);
+        entityManager.persist(statsA1);
+        entityManager.persist(statsA2);
         entityManager.persist(createMatchStats(playerB, match3, 38, 32, 9, 8, 1, 0, 5, 2, 12, 22, 4, 9, 4, 4));
-        entityManager.persist(createMatchStats(playerC, match2, 30, 18, 7, 3, 0, 2, 2, 4, 7, 15, 1, 3, 3, 4));
+        entityManager.persist(statsC2);
         entityManager.persist(createMatchStats(playerD, match4, 32, 24, 12, 3, 2, 4, 2, 3, 9, 17, 2, 4, 4, 5));
         entityManager.persist(createMatchStats(playerD, match5, 28, 20, 10, 2, 1, 5, 3, 4, 8, 16, 1, 3, 3, 4));
         entityManager.persist(createMatchStats(playerF, match3, 31, 16, 9, 4, 1, 1, 2, 3, 6, 14, 1, 4, 2, 3));
+
+        persistShootingAnalysis(playerA, statsA1, "2024-25", "paint", 10, 20);
+        persistShootingAnalysis(playerA, statsA1, "2024-25", "mid-range", 5, 12);
+        persistShootingAnalysis(playerC, statsC2, "2024-25", "paint", 7, 15);
 
         defaultScout.getWatchedMatches().addAll(List.of(match1, match2, match4));
         otherScout.getWatchedMatches().addAll(List.of(match3, match5));
@@ -191,13 +205,12 @@ public class DataInitializer implements CommandLineRunner {
      *
      * @return the managed club instance
      */
-    private Club persistClub(String name, String league, String city, String country,
+    private Club persistClub(String name, String league, String city,
                              String conference, String division) {
         Club c = new Club();
         c.setName(name);
         c.setLeague(league);
         c.setCity(city);
-        c.setCountry(country);
         c.setConference(conference);
         c.setDivision(division);
         entityManager.persist(c);
@@ -229,14 +242,13 @@ public class DataInitializer implements CommandLineRunner {
      * Creates a {@link Delegation} and wires both sides of director/scout associations.
      */
     private Delegation persistDelegation(String name, Scout scout, Director director,
-                                         LocalDate start, LocalDate end, String destination) {
+                                         LocalDate start, LocalDate end) {
         Delegation d = new Delegation();
         d.setName(name);
         d.setScout(scout);
         d.setCreatedBy(director);
         d.setStartDate(start);
         d.setEndDate(end);
-        d.setDestination(destination);
         d.setStatus(DelegationStatus.FINISHED);
         director.getCreatedDelegations().add(d);
         scout.getDelegations().add(d);
@@ -248,7 +260,7 @@ public class DataInitializer implements CommandLineRunner {
      * Persists a {@link Match} after {@link Match#validateBothTeams()}.
      */
     private Match persistMatch(LocalDate date, String place, Club host, Club guest,
-                               int hostScore, int guestScore, Delegation delegation) {
+                               int hostScore, int guestScore) {
         Match m = new Match();
         m.setDate(date);
         m.setPlace(place);
@@ -256,10 +268,27 @@ public class DataInitializer implements CommandLineRunner {
         m.setGuest(guest);
         m.setHostScore(hostScore);
         m.setGuestScore(guestScore);
-        m.setDelegation(delegation);
         m.validateBothTeams();
         entityManager.persist(m);
         return m;
+    }
+
+    /** Maintains both sides of the delegation ↔ match many-to-many association. */
+    private void linkDelegationMatch(Delegation delegation, Match match) {
+        delegation.getMatches().add(match);
+        match.getDelegations().add(delegation);
+    }
+
+    private void persistShootingAnalysis(Player player, MatchStats stats, String season,
+                                         String range, int made, int attempted) {
+        ShootingAnalysis analysis = new ShootingAnalysis();
+        analysis.setPlayer(player);
+        analysis.setBasedOnMatchStats(stats);
+        analysis.setSeason(season);
+        analysis.setRange(range);
+        analysis.setShotsMade(made);
+        analysis.setShotsAttempted(attempted);
+        entityManager.persist(analysis);
     }
 
     /**
@@ -321,7 +350,7 @@ public class DataInitializer implements CommandLineRunner {
         report.setRecommendation(recommendation);
         report.setCreatedBy(scout);
         report.setPlayer(player);
-        report.setBasedOnMatches(matches);
+        report.setBasedOnMatches(new ArrayList<>(matches));
         for (DetailedRating dr : ratings) {
             dr.setScoutingReport(report);
         }

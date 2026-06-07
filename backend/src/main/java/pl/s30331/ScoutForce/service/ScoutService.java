@@ -23,13 +23,13 @@ public class ScoutService {
     private final ScoutRepository scoutRepository;
 
     /**
-     * Returns a scout by database id.
+     * Loads a scout aggregate root by primary key.
      *
      * @param scoutId primary key of the scout ({@code person_id} in JOINED inheritance)
      * @return the loaded {@link Scout} aggregate root
      * @throws jakarta.persistence.EntityNotFoundException if no scout exists for {@code scoutId}
      */
-    public Scout getScout(Long scoutId) {
+    public Scout findScoutById(Long scoutId) {
         return scoutRepository.findById(scoutId)
                 .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException(
                         "Scout not found: " + scoutId));
