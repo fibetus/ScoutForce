@@ -3,6 +3,7 @@ package pl.s30331.ScoutForce.controller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.s30331.ScoutForce.controller.dto.ScoutSummaryDto;
 import pl.s30331.ScoutForce.model.Scout;
 import pl.s30331.ScoutForce.service.ScoutService;
 
@@ -49,14 +50,4 @@ public class ScoutController {
                 scout.getLicenseNumber()
         ));
     }
-
-    /**
-     * Minimal scout projection for frontend bootstrap.
-     *
-     * @param id            scout primary key
-     * @param firstName     first name
-     * @param lastName      last name
-     * @param licenseNumber unique license
-     */
-    public record ScoutSummaryDto(Long id, String firstName, String lastName, String licenseNumber) {}
 }
