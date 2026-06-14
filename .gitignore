@@ -42,3 +42,4 @@ frontend/dist/
 # ─── Private / research ──────────────────────────────────────────────────────
 private/
 docs/context/
+*/.env
