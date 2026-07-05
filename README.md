@@ -255,3 +255,9 @@ The following use cases are implemented in the current version of the applicatio
 | View Player's Matches | Match view; GET /api/scouts/{id}/players/{id}/matches |
 | Create Scouting Report | Report form; POST .../reports or POST .../reports/from-matches |
 | Add Detailed Ratings | Rating section in CreateReportView; part of POST payload |
+
+---
+
+# License
+
+Educational project - all rights reserved. It was developed for the 2025/2026 MAS course at PJAIT.
